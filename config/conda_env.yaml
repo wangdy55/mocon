@@ -1,0 +1,6 @@
+name: mocca
+dependencies:
+  - python=3.8
+  - numpy
+  - scipy
+  - tensorboardx
