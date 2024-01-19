@@ -1,7 +1,8 @@
 import panda3d.core as p3d
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.ShowBaseGlobal import globalClock
-from direct.filter.CommonFilters import CommonFilters
+
+from scene.Humanoid import Humanoid
 
 p3d.loadPrcFile("config/scene.prc")
 
@@ -12,13 +13,14 @@ class Scene(ShowBase):
         self.setCam()
 
         self.loadGround()
+        self.loadHumanoid()
         self.loadLight()
 
         self.taskMgr.add(self.update, "update")
 
     def setFrameRate(self, frameRate):
         self.setFrameRateMeter(True)
-        globalClock.setMode(p3d.ClockObject.M_limited)
+        globalClock.setMode(p3d.ClockObject.MLimited)
         globalClock.setFrameRate(frameRate)
 
     def setCam(self):
@@ -32,28 +34,46 @@ class Scene(ShowBase):
         self.ground.setPos(0, -1, 0)
         self.ground.setTexScale(p3d.TextureStage.getDefault(), 50, 50)
 
+    def loadHumanoid(self):
+        self.humanoid = Humanoid(self.loader, self.render)
+
     def loadLight(self):
         self.set_background_color((0, 0, 0, 1))
-        self.render.setShaderAuto()
-        # directional light node
-        directLight = p3d.DirectionalLight("directLight")
-        directLight.setColor((0.5, 0.5, 0.5, 1))
-        directLight.setColorTemperature(6500)
-        directLight.setShadowCaster(True, 2048, 2048)
-        directLight.getLens().setFilmSize((100, 100))
-        directLight.getLens().setNearFar(0, 100)
-        self.directLight = self.render.attachNewNode(directLight)
-        self.directLight.setPos(0, 5, 0)
-        self.directLight.setHpr(0, -180, 0)
-        self.render.setLight(self.directLight)
-        # ambient light node
-        ambientLight = p3d.AmbientLight("ambientLight")
-        ambientLight.setColor((0.1, 0.1, 0.1, 1))
-        self.ambientLight = self.render.attachNewNode(ambientLight)
-        self.render.setLight(self.ambientLight)
-        # bloom filter
-        filters = CommonFilters(self.win, self.cam)
-        filters.setBloom(size="small")
+        self.render.setShaderAuto(True)
+
+        ambientLight = p3d.AmbientLight('ambientLight')
+        ambientLight.setColor((0.3, 0.3, 0.3, 1))
+        self.alnp = self.render.attachNewNode(ambientLight)
+        self.render.setLight(self.alnp)
+        
+        # directional light set
+        self.directLightSet = p3d.NodePath("directLightSet")
+
+        fillLight1 = p3d.DirectionalLight('fillLight1')
+        fillLight1.setColor((0.45, 0.45, 0.45, 1))
+        flnp1 = self.directLightSet.attachNewNode(fillLight1)
+        flnp1.setPos(10, 10, 10)
+        flnp1.lookAt((0, 0, 0), (0, 1, 0))
+        self.render.setLight(flnp1)
+        
+        fillLight2 = p3d.DirectionalLight("fillLight2")
+        fillLight2.setColor((0.45, 0.45, 0.45, 1))
+        flnp2 = self.directLightSet.attachNewNode(fillLight2)
+        flnp2.setPos(-10, 10, 10)
+        flnp2.lookAt((0, 0, 0), (0, 1, 0))
+        self.render.setLight(flnp2)
+
+        keyLight = p3d.DirectionalLight("keyLight")
+        keyLight.setColorTemperature(6500)
+        keyLight.setShadowCaster(True, 2048, 2048)
+        keyLight.getLens().setFilmSize((10, 10))
+        keyLight.getLens().setNearFar(0.1, 300)
+        klnp = self.directLightSet.attachNewNode(keyLight)
+        klnp.setPos(0, 20, -10)
+        klnp.lookAt((0, 0, 0), (0, 1, 0))
+        self.render.setLight(klnp)
+
+        self.directLightSet.reparentTo(self.render)
 
     def update(self, task: p3d.PythonTask) -> int:
         return task.cont
