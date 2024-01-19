@@ -15,7 +15,7 @@ class Humanoid(DirectObject):
         self.endTex = self.addColorTex(endColor, "endTex")
         self.bodyTex = self.addColorTex(bodyColor, "bodyTex")
         # Load t-pose info.
-        tPose = np.load("assets/character/prototype.npz")
+        tPose = np.load("assets/character/humanoid.npz")
         self.jointNames = tPose["jointNames"]
         self.parentIdx = tPose["parentIdx"]
         # Load joints and bodies
@@ -77,3 +77,15 @@ class Humanoid(DirectObject):
         joints = np.array(joints)
         bodies = np.array(bodies)
         return joints, bodies
+    
+    def getJoints(self) -> np.ndarray:
+        # dtype of joints is panda3d.core.NodePath
+        return self.joints
+    
+    def setJointPosByName(self, name, pos):
+        self.joints[self.name2idx[name]].setPos(self.render, *pos)
+
+    def setJointRotByName(self, name, quat):
+        self.joints[self.name2idx[name]].setQuat(
+            self.render, p3d.Quat(*quat[..., [3, 0, 1, 2]].tolist())
+        )
