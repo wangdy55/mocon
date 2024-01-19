@@ -2,7 +2,6 @@ import panda3d.core as p3d
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.ShowBaseGlobal import globalClock
 from direct.filter.CommonFilters import CommonFilters
-from math import sin, cos
 
 p3d.loadPrcFile("config/scene.prc")
 
@@ -13,7 +12,6 @@ class Scene(ShowBase):
         self.setCam()
 
         self.loadGround()
-        self.loadPandas()
         self.loadLight()
 
         self.taskMgr.add(self.update, "update")
@@ -28,33 +26,11 @@ class Scene(ShowBase):
         self.cam.setHpr(0, -90, 0)
 
     def loadGround(self):
-        self.ground = self.loader.loadModel("asset/scene/ground.egg")
+        self.ground = self.loader.loadModel("assets/scene/ground.egg")
         self.ground.reparentTo(self.render)
         self.ground.setScale(100, 1, 100)
         self.ground.setPos(0, -1, 0)
         self.ground.setTexScale(p3d.TextureStage.getDefault(), 50, 50)
-
-    def loadPandas(self):
-        self.pandas = p3d.NodePath("pandas")
-
-        self.panda1 = self.loader.loadModel("models/panda")
-        self.panda1.reparentTo(self.pandas)
-        self.panda1.setHpr(0, -90, 0)
-        self.panda1.setScale(0.2)
-
-        self.panda2 = self.loader.loadModel("models/panda")
-        self.panda2.reparentTo(self.pandas)
-        self.panda2.setPos(4, 0, -5)
-        self.panda2.setHpr(0, -90, 0)
-        self.panda2.setScale(0.2)
-
-        self.panda3 = self.loader.loadModel("models/panda")
-        self.panda3.reparentTo(self.pandas)
-        self.panda3.setPos(-4, 0, -7)
-        self.panda3.setHpr(0, -90, 0)
-        self.panda3.setScale(0.2)
-
-        self.pandas.reparentTo(self.render)
 
     def loadLight(self):
         self.set_background_color((0, 0, 0, 1))
@@ -79,12 +55,5 @@ class Scene(ShowBase):
         filters = CommonFilters(self.win, self.cam)
         filters.setBloom(size="small")
 
-    def update(self, task):
+    def update(self, task: p3d.PythonTask) -> int:
         return task.cont
-
-def main():
-    scene = Scene()
-    scene.run()
-
-if __name__ == '__main__':
-    main()
