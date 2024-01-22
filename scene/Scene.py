@@ -2,7 +2,7 @@ import panda3d.core as p3d
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.ShowBaseGlobal import globalClock
 
-from scene.Humanoid import Humanoid
+from scene.Model import Model
 
 p3d.loadPrcFile("config/scene.prc")
 
@@ -13,7 +13,7 @@ class Scene(ShowBase):
         self.setCam()
 
         self.loadGround()
-        self.loadHumanoid()
+        self.loadModel()
         self.loadLight()
 
         self.taskMgr.add(self.update, "update")
@@ -24,8 +24,10 @@ class Scene(ShowBase):
         globalClock.setFrameRate(frameRate)
 
     def setCam(self):
-        self.cam.setPos(0, 1, 10)
-        self.cam.setHpr(0, -90, 0)
+        # self.cam.setPos(0, 1, 10)
+        # self.cam.setHpr(0, -90, 0)
+        self.camRef = self.camera
+        # self.camRef.lookAt(0, 1, 0)
 
     def loadGround(self):
         self.ground = self.loader.loadModel("assets/scene/ground.egg")
@@ -34,8 +36,8 @@ class Scene(ShowBase):
         self.ground.setPos(0, -1, 0)
         self.ground.setTexScale(p3d.TextureStage.getDefault(), 50, 50)
 
-    def loadHumanoid(self):
-        self.humanoid = Humanoid(self.loader, self.render)
+    def loadModel(self):
+        self.model = Model(self.loader, self.render)
 
     def loadLight(self):
         self.set_background_color((0, 0, 0, 1))
@@ -73,7 +75,7 @@ class Scene(ShowBase):
         klnp.lookAt((0, 0, 0), (0, 1, 0))
         self.render.setLight(klnp)
 
-        self.directLightSet.reparentTo(self.render)
+        self.directLightSet.wrtReparentTo(self.model.root)
 
     def update(self, task: p3d.PythonTask) -> int:
         return task.cont

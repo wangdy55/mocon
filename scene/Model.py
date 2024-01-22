@@ -4,7 +4,7 @@ from direct.showbase.Loader import Loader
 
 import numpy as np
 
-class Humanoid(DirectObject):
+class Model(DirectObject):
     def __init__(self, loader: Loader, render: p3d.NodePath):
         self.loader = loader
         self.render = render
@@ -23,6 +23,8 @@ class Humanoid(DirectObject):
         bodyPos = tPose["bodyPos"]
         bodyScale = tPose["bodyScale"]
         self.joints, self.bodies = self.loadModel(jointPos, bodyPos, bodyScale)
+        # Define the first joint as root
+        self.root = self.joints[0]
         # joint name index
         self.name2idx = {name: i for i, name in enumerate(self.jointNames)}
 
