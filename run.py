@@ -1,9 +1,13 @@
 from scene.Scene import Scene
-from scene.Prototype import Prototype
+from mocon.character.Character import Character
+from mocon.controller.CameraController import CameraController
+# from mocon.controller.CameraControllerGames import CameraController
 
 def main():
     scene = Scene()
-    proto = Prototype(scene)
+    character = Character(scene.model)
+    cameraController = CameraController(scene)
+    # CharacterController
     
     scene.run()
 
