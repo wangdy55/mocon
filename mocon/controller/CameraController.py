@@ -5,12 +5,12 @@ import math
 from scene.Scene import Scene
 
 class CameraController(DirectObject):
-    def __init__(self, scene: Scene):
+    def __init__(self, model: DirectObject, scene: Scene):
         super().__init__()
+        self.model = model
         self.scene = scene
         self.scene.disableMouse()
         self.scene.taskMgr.add(self.update, "updateCam")
-        self.model = self.scene.model
         self.cam = self.scene.cam
 
         self.pos = p3d.LVector3(3, 3, 3)
@@ -26,7 +26,7 @@ class CameraController(DirectObject):
 
         self.setMouseMap()
 
-        self._look()
+        self.look()
 
     @property
     def _mousePos(self):
@@ -43,7 +43,7 @@ class CameraController(DirectObject):
         )
         self._lockedMousePos = self._mousePos
 
-    def _look(self):
+    def look(self):
         self.cam.setPos(self.pos)
         self.cam.lookAt(self.center, self.up)
 
@@ -83,7 +83,7 @@ class CameraController(DirectObject):
         r = self.pos - self.center
         k = 1.1 if direction > 0 else 0.9
         self.pos = self.center + r * k
-        self._look()
+        self.look()
 
     def update(self, task) -> int:
         if self._mouseSig == 0:
@@ -97,7 +97,7 @@ class CameraController(DirectObject):
         elif self._mouseSig == 3:
             self.shift(mousePosOff)
 
-        self._look()
+        self.look()
         return task.cont
     
     def pan(self, mousePosOff: p3d.LVector2f):
