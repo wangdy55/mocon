@@ -2,6 +2,7 @@ from scene.Scene import Scene
 from scene.Model import Model
 from mocon.character.Character import Character
 from mocon.controller.CameraController import CameraController
+from mocon.controller.CharacterController import CharacterController
 
 def main():
     scene = Scene()
@@ -9,7 +10,7 @@ def main():
 
     character = Character(model)
     cameraController = CameraController(model, scene)
-    # characterController = characterController(scene) 
+    characterController = CharacterController(cameraController, scene)
     # motionController = motionController(character)
     
     scene.run()
