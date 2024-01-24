@@ -47,6 +47,10 @@ class CameraController(DirectObject):
         self.cam.setPos(self.pos)
         self.cam.lookAt(self.center, self.up)
 
+    @property
+    def camForward(self):
+        return self.center - self.pos
+
     def setMouseMap(self):
         self.accept("mouse1", self.handleLeft, [1])
         self.accept("mouse1-up", self.handleLeft, [0])

@@ -8,6 +8,7 @@ class Scene(ShowBase):
     def __init__(self):
         super().__init__(fStartDirect=True)
         self.setFrameRate(60)
+        self.dt = 1/60
         # self.setCam()
 
         self.loadGround()
