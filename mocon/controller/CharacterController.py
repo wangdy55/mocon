@@ -23,7 +23,7 @@ class CharacterController(DirectObject):
         self.vel = p3d.LVector3(0, 0, 0)
         self.acc = p3d.LVector3(0, 0, 0)
         self.avel = p3d.LVector3(0, 0, 0)
-        self.inputVel = p3d.LVector3(0, 0, 0)
+        self.camInput = p3d.LVector3(0, 0, 0)
 
         self.futureWind = 6
         self.futureNodes = []
@@ -33,6 +33,7 @@ class CharacterController(DirectObject):
         self.futureAvel = []
 
         self.targetRot = np.array([0, 0, 0, 1])
+        self.targetPos = p3d.LVector3(0, 0, 0)
         self.targetVelOff = p3d.LVector3(0, 0, 0)
         self.targetRotOff = p3d.LVector3(0, 0, 0)
         self.halflife = 0.27
@@ -59,11 +60,15 @@ class CharacterController(DirectObject):
     def rotation(self):
         return np.array(self.node.getQuat())[[1, 2, 3, 0]]
     
+    @property
+    def position(self):
+        return self.node.getPos()
+    
     def handleInput(self, axis, val):
         if axis == "x":
-            self.inputVel[0] = val
+            self.camInput[0] = val
         elif axis == "z":
-            self.inputVel[2] = val
+            self.camInput[2] = val
 
     def setKeyMap(self):
         keyMap = {
@@ -89,7 +94,7 @@ class CharacterController(DirectObject):
     def getTargetVel(
         self,
         camForward: p3d.LVector3,
-        inputVel: p3d.LVector3,
+        camInput: p3d.LVector3,
         initRot: np.ndarray
     ) -> np.ndarray:
         # Get global target velocity to update position
@@ -98,10 +103,11 @@ class CharacterController(DirectObject):
         # rotation around y-axis
         angle = np.arctan2(camForward[0], camForward[2])
         yRotVec = R.from_rotvec(angle * np.array([0, 1, 0]))
-        # current global velocity
-        globalVel = yRotVec.apply(inputVel)
+        # coordinate transformation from camera to global
+        globalInput = yRotVec.apply(camInput)
 
-        localTargetDirection = R.from_quat(initRot).apply(globalVel, inverse=True)
+        # coordinate transformation from global to local
+        localTargetDirection = R.from_quat(initRot).apply(globalInput, inverse=True)
         if localTargetDirection[2] > 0:
             localTargetVel = np.array([sideSpeed, 0, fwdSpeed]) * localTargetDirection
         else:
@@ -125,10 +131,10 @@ class CharacterController(DirectObject):
 
         # Get global target velocity and rotation
         camForward = self.cameraController.camForward
-        curTargetVel = self.getTargetVel(camForward, self.inputVel, initRot)
+        curTargetVel = self.getTargetVel(camForward, self.camInput, initRot)
         curTargetRot = self.getTargetRot(curTargetVel)
-        self.targetVel = curTargetVel
-        self.targetRot = curTargetRot
+        # self.targetVel = curTargetVel
+        # self.targetRot = curTargetRot
 
         self.targetVelOff = (curTargetVel - self.vel) / self.dt
         self.targetRotOff = (
@@ -157,14 +163,17 @@ class CharacterController(DirectObject):
             positionTrajactory.append(newPos)
             self.futureVel.append(newVel.copy())
 
-        # Update current position
-        rotationTrajactory[0], self.avel = Interpolator.simulation_rotations_update(
+        # Update current rotation and position to next frame
+        self.targetRot, self.avel = Interpolator.simulation_rotations_update(
             initRot, self.avel, curTargetRot, self.halflife, self.dt
         )
-        positionTrajactory[0], self.vel, self.acc = Interpolator.simulation_positions_update(
+        self.targetPos, self.vel, self.acc = Interpolator.simulation_positions_update(
             initPos, self.vel, self.acc, curTargetVel, self.halflife, self.dt
         )
+        rotationTrajactory[0] = self.targetRot
         rotationTrajactory = np.array(rotationTrajactory).reshape(-1, 4)
+        positionTrajactory[0] = self.targetPos
+        positionTrajactory = np.array(positionTrajactory).reshape(-1, 3)
             
         # Record trajectory
         self.futurePos = np.array(positionTrajactory).reshape(-1, 3)
@@ -193,3 +202,5 @@ class CharacterController(DirectObject):
         self.updatePos()
         return task.cont
     
+    def getNextState(self):
+        return self.targetRot, self.avel, self.targetPos, self.vel
