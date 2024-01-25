@@ -15,7 +15,7 @@ class Model(DirectObject):
         self.endTex = self.addColorTex(endColor, "endTex")
         self.bodyTex = self.addColorTex(bodyColor, "bodyTex")
         # Load t-pose info.
-        tPose = np.load("assets/character/humanoid.npz")
+        tPose = np.load("assets/character/model.npz")
         self.jointNames = tPose["jointNames"]
         self.parentIdx = tPose["parentIdx"]
         # Load joints and bodies
