@@ -131,3 +131,8 @@ class Model(DirectObject):
         self.joints[self.name2idx[name]].setQuat(
             self.scene.render, p3d.Quat(*quat[..., [3, 0, 1, 2]].tolist())
         )
+
+    def setJointByName(self, name, pos, quat):
+        self.setJointPosByName(name, pos)
+        self.setJointRotByName(name, quat)
+        

@@ -3,6 +3,7 @@ from scene.Model import Model
 from mocon.character.Character import Character
 from mocon.controller.CameraController import CameraController
 from mocon.controller.CharacterController import CharacterController
+from mocon.motion.MotionController import MotionController
 
 def main():
     scene = Scene()
@@ -11,7 +12,12 @@ def main():
     character = Character(model)
     cameraController = CameraController(model, scene)
     characterController = CharacterController(cameraController, scene)
-    # motionController = motionController(character)
+    motionController = MotionController(
+        character,
+        characterController,
+        scene,
+        bvhPath="mocon/motion/mocap/bvh/walk1_subject5.bvh"
+    )
     
     scene.run()
 

@@ -3,7 +3,7 @@ import copy
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-from utils.QuatHelper import QuatHelper
+from mocon.motion.utils.QuatHelper import QuatHelper
 
 """
 N = numFrames
@@ -26,7 +26,7 @@ class BVHLoader():
         self.numFrames = 0
         self.frameSize = 0
         self.jointPos = None  # shape = (N, M, 3)
-        self.jointRot = None  # shape = (N, M, 4), R.quat
+        self.jointQuat = None  # shape = (N, M, 4), R.quat
 
         if self.bvhPath is not None:
             self.loadBVH()
@@ -121,8 +121,8 @@ class BVHLoader():
         self.frameSize = motion_data.shape[1]
 
         self.jointPos = np.zeros([self.numFrames, self.numJoints, 3])
-        self.jointRot = np.zeros([self.numFrames, self.numJoints, 4])
-        self.jointRot[:, :, 3] = 1.0
+        self.jointQuat = np.zeros([self.numFrames, self.numJoints, 4])
+        self.jointQuat[:, :, 3] = 1.0
 
         channelIdx = 0
         for i in range(len(self.jointNames)):
@@ -137,13 +137,13 @@ class BVHLoader():
                 position = motion_data[:, channelIdx:channelIdx+3]
                 rotation = motion_data[:, channelIdx+3:channelIdx+6]
             self.jointPos[:, i, :] = position
-            self.jointRot[:, i, :] = R.from_euler("XYZ", rotation, degrees=True).as_quat()
+            self.jointQuat[:, i, :] = R.from_euler("XYZ", rotation, degrees=True).as_quat()
 
             channelIdx += self.channels[i]
 
         return
 
-    def batchForwardKinematics(self, jointPos=None, jointRot=None) -> tuple:
+    def batchForwardKinematics(self, jointPos=None, jointQuat=None) -> tuple:
         """
         @Parameters:
             jointPos: ndarray, shape = (N, M, 3)
@@ -155,20 +155,20 @@ class BVHLoader():
         """
         if jointPos is None:
             jointPos = self.jointPos
-        if jointRot is None:
-            jointRot = self.jointRot
+        if jointQuat is None:
+            jointQuat = self.jointQuat
 
         jointTrans = np.zeros_like(jointPos)
-        jointOrien = np.zeros_like(jointRot)
+        jointOrien = np.zeros_like(jointQuat)
         jointOrien[..., 3] = 1.0
 
         for i, p in enumerate(self.parentIdx):
             if p == -1:
                 jointTrans[:, i] = jointPos[:, i]
-                jointOrien[:, i] = jointRot[:, i]
+                jointOrien[:, i] = jointQuat[:, i]
             else:
                 Op = R.from_quat(jointOrien[:, p])
-                Oi = Op * R.from_quat(jointRot[:, i])
+                Oi = Op * R.from_quat(jointQuat[:, i])
                 jointTrans[:, i] = jointTrans[:, p] + Op.apply(jointPos[:, i])
                 jointOrien[:, i] = Oi.as_quat()
 
@@ -185,7 +185,7 @@ class BVHLoader():
         self.parentIdx[0] = -1
         self.joint_channel = [self.channels[i] for i in idx]
         self.jointPos = self.jointPos[:,idx,:]
-        self.jointRot = self.jointRot[:,idx,:]
+        self.jointQuat = self.jointQuat[:,idx,:]
     
     def rawCopy(self):
         return copy.deepcopy(self)
@@ -202,7 +202,7 @@ class BVHLoader():
         """
         res = self.rawCopy()
         res.jointPos = res.jointPos[start:end,:,:]
-        res.jointRot = res.jointRot[start:end,:,:]
+        res.jointQuat = res.jointQuat[start:end,:,:]
         return res
     
     def append(self, other):
@@ -212,7 +212,7 @@ class BVHLoader():
         other = other.rawCopy()
         other.adjustJointNames(self.jointNames)
         self.jointPos = np.concatenate((self.jointPos, other.jointPos), axis=0)
-        self.jointRot = np.concatenate((self.jointRot, other.jointRot), axis=0)
+        self.jointQuat = np.concatenate((self.jointQuat, other.jointQuat), axis=0)
         pass
     
     # for MotionVAE motion format
@@ -226,10 +226,10 @@ class BVHLoader():
         # local batch FK -> local joint position (Jp)
         localJointPos = self.jointPos.copy()
         localJointPos[:, 0] = [0., 0., 0.]
-        localJointRot = self.jointRot.copy()
-        localJointRot[:, 0] = [0., 0., 0., 1.]
+        localJointQuat = self.jointQuat.copy()
+        localJointQuat[:, 0] = [0., 0., 0., 1.]
         localJointTrans, localJointOrien = self.batchForwardKinematics(
-            jointPos=localJointPos, jointRot=localJointRot
+            jointPos=localJointPos, jointQuat=localJointQuat
         )
 
         # Remove end effector info.
@@ -268,7 +268,7 @@ class BVHLoader():
             return
 
         # root info: (r'x, r'z, w_y)
-        rootQuat = self.jointRot[:, 0].copy()
+        rootQuat = self.jointQuat[:, 0].copy()
         rootPos = self.jointPos[:, 0].copy()
 
         # root orientation -> w_y (rad/s)

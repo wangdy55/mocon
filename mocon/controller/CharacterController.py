@@ -17,7 +17,7 @@ class CharacterController(DirectObject):
         super().__init__()
         self.cameraController = cameraController
         self.scene = scene
-        self.scene.taskMgr.add(self.update, "update")
+        self.scene.taskMgr.add(self.update, "updateCharacterController")
         self.dt = scene.dt
 
         self.vel = p3d.LVector3(0, 0, 0)
