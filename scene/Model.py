@@ -25,10 +25,15 @@ class Model(DirectObject):
         self.joints, self.bodies = self.loadModel(jointPos, bodyPos, bodyScale)
         # Define the first joint as root
         self.root = self.joints[0]
+        self.lightNode = self.scene.render.attachNewNode("light")
+        lightPos = self.root.getPos()
+        lightPos[1] = 0
+        self.lightNode.setPos(*lightPos)
         # joint name index
         self.name2idx = {name: i for i, name in enumerate(self.jointNames)}
 
         self.loadLight()
+        self.scene.taskMgr.add(self.updateLight, "updateLight")
 
     def addColorTex(self, rgba: list, texName: str) -> p3d.Texture:
         # Add a single color texture
@@ -75,7 +80,13 @@ class Model(DirectObject):
         klnp.lookAt((0, 0, 0), (0, 1, 0))
         self.scene.render.setLight(klnp)
 
-        self.directLightSet.wrtReparentTo(self.root)
+        self.directLightSet.wrtReparentTo(self.lightNode)
+
+    def updateLight(self, task) -> int:
+        lightPos = self.root.getPos()
+        lightPos[1] = 0
+        self.lightNode.setPos(*lightPos)
+        return task.cont
 
     def loadJoint(self, index: int, pos: np.ndarray, isEnd: bool) -> p3d.NodePath:
         # Load a joint with global position
