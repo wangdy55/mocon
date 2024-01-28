@@ -1,6 +1,10 @@
+import torch
+import numpy as np
+from scipy.spatial.transform import Rotation as R
+
 from mocon.character.Character import Character
 from mocon.controller.CharacterController import CharacterController
-from mocon.motion.utils.BVHMotion import BVHLoader
+from mocon.motion.mvae.model.MotionVAE import MotionMixtureSpecialistVAE
 from scene.Scene import Scene
 
 class MotionController:
@@ -9,21 +13,99 @@ class MotionController:
         character: Character,
         characterController: CharacterController,
         scene: Scene,
-        bvhPath: str
+        npzPath: str,
+        mvaePath: str
     ):
         self.character = character
         self.characterController = characterController
         self.scene = scene
-        self.scene.taskMgr.add(self.update, "updateMotion")
-        self.bvhLoader = BVHLoader(bvhPath)
-        self.jointTrans, self.jointOrien = self.bvhLoader.batchForwardKinematics()
-        self.curFrame = 0
+        self.startFrame = self.character.startFrame
+        # Initialize motion
+        mvaeMocap = np.load(npzPath)
+        self.numNotEe = mvaeMocap["numNotEe"]
+        mvaeMotion = mvaeMocap["mvaeMotion"]
+        self.motion = mvaeMotion[self.startFrame]
+        
+        self.loadMVAE(mvaePath)
+
+        self.scene.taskMgr.add(self.update, "updateMotionController")
+
+    @torch.no_grad()
+    def loadMVAE(self, stateDictPath: str):
+        raw_data = np.load("mocon/motion/mocap/npz/walk1_subject5.npz")["mvaeMotion"]
+        mocap_data = torch.from_numpy(raw_data).float()
+
+        max = mocap_data.max(dim=0)[0]
+        min = mocap_data.min(dim=0)[0]
+        avg = mocap_data.mean(dim=0)
+        std = mocap_data.std(dim=0)
+
+        std[std == 0] = 1.0
+
+        normalization = {
+            "mode": "zscore",
+            "max": max,
+            "min": min,
+            "avg": avg,
+            "std": std,
+        }
+
+        self.mvae = MotionMixtureSpecialistVAE(
+            frame_size=231,
+            latent_size=32,
+            num_condition_frames=1,
+            num_future_predictions=1,
+            normalization=normalization,
+            num_experts=6,
+        )
+        stateDict = torch.load(stateDictPath)
+        self.mvae.load_state_dict(stateDict)
+        self.mvae.eval()
+
+    def updateCharacter(self):
+        # Call Character to update state
+        vx, vz, wy = self.motion[:3]
+        # localJointTrans = self.motion[3:3+(self.numNotEe-1)*3]
+        localJointVec6d = self.motion[-(self.numNotEe-1)*6:]
+
+        # local joint orien. -> joint rotation
+        localJointOrien = np.zeros([self.character.numJoints, 4])
+        localJointOrien[..., 3] = 1.
+        localJointVec6d = localJointVec6d.reshape(self.numNotEe-1, 3, 2)
+        localJointZ = np.cross(
+            localJointVec6d[..., 0], localJointVec6d[..., 1], axis=-1
+        ).reshape(self.numNotEe-1, 3, 1)
+        localJointZ /= np.linalg.norm(localJointZ, axis=-2, keepdims=True)
+        localJointMat = np.concatenate((localJointVec6d, localJointZ), axis=-1)
+
+        j = 0
+        for i in range(1, self.character.numJoints):
+            if (self.character.channels[i] == 0): # Skip end effectors
+                continue
+            localJointOrien[i] = R.from_matrix(localJointMat[j]).as_quat()
+            j += 1
+
+        fMotion = { # format motion for Character
+            "rootVel": np.array([vx, 0, vz]),
+            "rootAvelY": wy,
+            "localJointOrien": localJointOrien,
+            # "jointTrans": localJointTrans
+        }
+        self.character.updateState(fMotion)
+
+    @torch.no_grad()
+    def updateMotion(self):
+        # Call MVAE to predict motion
+        z = torch.normal(mean=0, std=1, size=(1, self.mvae.latent_size))
+        c = torch.from_numpy(self.motion).float().reshape(1, -1)
+        c = self.mvae.normalize(c)
+        output = self.mvae.sample(z, c, deterministic=True)
+        output = self.mvae.denormalize(output)
+        output = output.detach().numpy()
+        self.motion = output.squeeze()
 
     def update(self, task):
-        self.character.updateJoints(
-            jointNames=self.bvhLoader.jointNames,
-            jointTrans=self.jointTrans[self.curFrame],
-            jointOrien= self.jointOrien[self.curFrame]
-        )
-        self.curFrame = (self.curFrame + 1) % (self.bvhLoader.numFrames)
+        self.updateCharacter()
+        self.updateMotion()
+
         return task.cont
