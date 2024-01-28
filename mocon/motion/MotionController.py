@@ -1,6 +1,6 @@
 from mocon.character.Character import Character
 from mocon.controller.CharacterController import CharacterController
-from mocon.motion.utils.BVHLoader import BVHLoader
+from mocon.motion.utils.BVHMotion import BVHLoader
 from scene.Scene import Scene
 
 class MotionController:
