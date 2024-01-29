@@ -31,35 +31,8 @@ class MotionController:
         self.scene.taskMgr.add(self.update, "updateMotionController")
 
     @torch.no_grad()
-    def loadMVAE(self, stateDictPath: str):
-        raw_data = np.load("mocon/motion/mocap/npz/walk1_subject5.npz")["mvaeMotion"]
-        mocap_data = torch.from_numpy(raw_data).float()
-
-        max = mocap_data.max(dim=0)[0]
-        min = mocap_data.min(dim=0)[0]
-        avg = mocap_data.mean(dim=0)
-        std = mocap_data.std(dim=0)
-
-        std[std == 0] = 1.0
-
-        normalization = {
-            "mode": "zscore",
-            "max": max,
-            "min": min,
-            "avg": avg,
-            "std": std,
-        }
-
-        self.mvae = MotionMixtureSpecialistVAE(
-            frame_size=231,
-            latent_size=32,
-            num_condition_frames=1,
-            num_future_predictions=1,
-            normalization=normalization,
-            num_experts=6,
-        )
-        stateDict = torch.load(stateDictPath)
-        self.mvae.load_state_dict(stateDict)
+    def loadMVAE(self, mvaePath: str):
+        self.mvae = torch.load(mvaePath)
         self.mvae.eval()
 
     def updateCharacter(self):
@@ -96,11 +69,20 @@ class MotionController:
     @torch.no_grad()
     def updateMotion(self):
         # Call MVAE to predict motion
-        z = torch.normal(mean=0, std=1, size=(1, self.mvae.latent_size))
-        c = torch.from_numpy(self.motion).float().reshape(1, -1)
+        z = torch.normal(
+            mean=0, std=1,
+            size=(1, self.mvae.latent_size)
+        ).to("cuda:0")
+        c = torch.from_numpy(
+            self.motion
+        ).float().reshape(1, -1).to("cuda:0")
+
         c = self.mvae.normalize(c)
-        output = self.mvae.sample(z, c, deterministic=True)
-        output = self.mvae.denormalize(output)
+        output = self.mvae.sample(
+            z, c, deterministic=True
+        )
+        output = self.mvae.denormalize(output).cpu()
+
         output = output.detach().numpy()
         self.motion = output.squeeze()
 

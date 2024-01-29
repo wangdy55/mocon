@@ -7,8 +7,8 @@ from types import SimpleNamespace
 import numpy as np
 import os, time, copy
 
-from train_util import update_linear_schedule
-from model.MotionVAE import MotionVAE, MotionMixtureVAE, MotionMixtureSpecialistVAE
+from mocon.motion.mvae.train_util import update_linear_schedule
+from mocon.motion.mvae.model.MotionVAE import MotionVAE, MotionMixtureVAE, MotionMixtureSpecialistVAE
 
 '''
 cwd = os.path.dirname(os.path.realpath(__file__)) # mvae dir.
@@ -19,15 +19,15 @@ os.sys.path.append(mocca_dir)
 '''
 
 # dir.
-MOCAP_DIR = "../mocap/npz"
-LOG_DIR = "log"
-MODEL_DIR = "model"
+MOCAP_DIR = "mocon/motion/mocap/npz"
+LOG_DIR = "mocon/motion/mvae/log"
+MODEL_DIR = "mocon/motion/mvae/model"
 
 # spec.
 MOCAP = "walk1_subject5.npz"
 MODEL = "sp"
 BETA = 0.5
-TAIL = "" # supplemental info.
+TAIL = "exe" # supplemental info.
 
 def feed_vae(mvae, ground_truth, condition, future_weights):
     condition = condition.flatten(start_dim=1, end_dim=2)
@@ -152,7 +152,8 @@ def main():
     train_id = '_'.join(b for b in blocks if b != '')
     log_path = os.path.join(LOG_DIR, train_id)
     save_path = os.path.join(
-        MODEL_DIR, MOCAP.split(".")[0] + "_state_dict.pt"
+        MODEL_DIR,
+        f"{MOCAP.split('.')[0]}_exe.pt"
     )
 
     if args.load_saved_model:
@@ -245,8 +246,7 @@ def main():
                     writer.add_scalar("total_loss", total_loss, global_step)
                     global_step += 1
 
-        # torch.save(copy.deepcopy(mvae).cpu(), save_path)
-        torch.save(mvae.state_dict(), save_path)
+        torch.save(mvae, save_path)
 
 if __name__ == "__main__":
     main()

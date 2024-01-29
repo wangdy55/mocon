@@ -9,7 +9,7 @@ from mocon.motion.MotionController import MotionController
 
 bvhPath = "mocon/motion/mocap/bvh/walk1_subject5.bvh"
 npzPath = "mocon/motion/mocap/npz/walk1_subject5.npz"
-stateDictPath = "mocon/motion/mvae/model/walk1_subject5_state_dict.pt"
+mvaePath = "mocon/motion/mvae/model/walk1_subject5.pt"
 
 def main():
     scene = Scene()
@@ -20,7 +20,8 @@ def main():
     characterController = CharacterController(cameraController, scene)
     MotionController(
         character, characterController, scene,
-        npzPath, stateDictPath
+        npzPath,
+        mvaePath
     )
     
     scene.run()
