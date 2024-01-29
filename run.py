@@ -9,10 +9,7 @@ from mocon.motion.MotionController import MotionController
 
 bvhPath = "mocon/motion/mocap/bvh/walk1_subject5.bvh"
 npzPath = "mocon/motion/mocap/npz/walk1_subject5.npz"
-
-nnModel = "mocon/motion/mvae/model"
-os.sys.path.append(nnModel)
-stateDictPath = os.path.join(nnModel, "walk1_subject5_state_dict.pt")
+stateDictPath = "mocon/motion/mvae/model/walk1_subject5_state_dict.pt"
 
 def main():
     scene = Scene()
