@@ -191,10 +191,6 @@ class CharacterController(DirectObject):
         for i in range(self.futureWind):
             self.futureNodes[i].setPos(*positionTrajactory[i])
             self.futureNodes[i].setQuat(p3d.Quat(*rotationTrajactory[i]))
-
-        # Sync. controller to character
-        self.node.setX(self.character.rootPos[0])
-        self.node.setZ(self.character.rootPos[2])
         
         '''
         # Update camera position to controller

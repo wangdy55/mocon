@@ -86,8 +86,14 @@ class MotionController:
         output = output.detach().numpy()
         self.motion = output.squeeze()
 
+    def syncController(self):
+        # Sync. controller to character
+        self.characterController.node.setX(self.character.rootPos[0])
+        self.characterController.node.setZ(self.character.rootPos[2])
+
     def update(self, task):
         self.updateCharacter()
         self.updateMotion()
+        self.syncController()
 
         return task.cont
