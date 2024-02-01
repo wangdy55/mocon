@@ -16,6 +16,10 @@ class Character:
 
         self.scene.taskMgr.add(self.update, "updateCharacter")
 
+    @property
+    def rootPos(self):
+        return self.jointTrans[0]
+
     def loadBVHInfo(self, startFrame: int):
         self.dt = self.bvhMotion.dt
         self.numJoints = self.bvhMotion.numJoints

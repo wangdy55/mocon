@@ -16,8 +16,12 @@ def main():
     model = Model(scene)
 
     character = Character(model, scene, bvhPath)
-    cameraController = CameraController(model, scene)
-    characterController = CharacterController(cameraController, scene)
+    cameraController = CameraController(character, scene)
+    characterController = CharacterController(
+        character,
+        cameraController,
+        scene
+    )
     MotionController(
         character, characterController, scene,
         npzPath,

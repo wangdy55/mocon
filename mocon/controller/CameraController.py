@@ -5,9 +5,9 @@ import math
 from scene.Scene import Scene
 
 class CameraController(DirectObject):
-    def __init__(self, model: DirectObject, scene: Scene):
+    def __init__(self, character, scene: Scene):
         super().__init__()
-        self.model = model
+        self.character = character
         self.scene = scene
         self.scene.disableMouse()
         self.scene.taskMgr.add(self.update, "updateCam")

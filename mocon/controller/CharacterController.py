@@ -8,13 +8,17 @@ from mocon.controller.utils.Interpolator import Interpolator
 from mocon.controller.utils.Visualizer import Visualizer
 from scene.Scene import Scene
 
+from mocon.character.Character import Character
+
 class CharacterController(DirectObject):
     def __init__(
         self,
+        character: Character,
         cameraController: CameraController,
         scene: Scene
     ):
         super().__init__()
+        self.character = character
         self.cameraController = cameraController
         self.scene = scene
         self.scene.taskMgr.add(self.update, "updateCharacterController")
@@ -188,11 +192,23 @@ class CharacterController(DirectObject):
             self.futureNodes[i].setPos(*positionTrajactory[i])
             self.futureNodes[i].setQuat(p3d.Quat(*rotationTrajactory[i]))
 
-        # Update camera position
+        # Sync. controller to character
+        self.node.setX(self.character.rootPos[0])
+        self.node.setZ(self.character.rootPos[2])
+        
+        '''
+        # Update camera position to controller
         delta = positionTrajactory[0] - initPos
         delta = p3d.LVector3(*delta)
         self.cameraController.pos += delta
         self.cameraController.center += delta
+        self.cameraController.look()
+        '''
+        # Update camera position to character
+        delta = self.character.rootPos - self.cameraController.center
+        delta = p3d.LVector3(*delta)
+        self.cameraController.center += delta
+        self.cameraController.pos += delta
         self.cameraController.look()
 
     def drawFutureDirections(self):
