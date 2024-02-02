@@ -10,14 +10,6 @@ import os, time, copy
 from mocon.motion.mvae.train_util import update_linear_schedule
 from mocon.motion.mvae.model.MotionVAE import MotionVAE, MotionMixtureVAE, MotionMixtureSpecialistVAE
 
-'''
-cwd = os.path.dirname(os.path.realpath(__file__)) # mvae dir.
-motion_dir = os.path.dirname(cwd)
-mocon_dir = os.path.dirname(motion_dir)
-mocca_dir = os.path.dirname(mocon_dir)
-os.sys.path.append(mocca_dir)
-'''
-
 # dir.
 MOCAP_DIR = "mocon/motion/mocap/npz"
 LOG_DIR = "mocon/motion/mvae/log"

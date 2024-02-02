@@ -7,31 +7,30 @@ p3d.loadPrcFile("config/scene.prc")
 class Scene(ShowBase):
     def __init__(self):
         super().__init__(fStartDirect=True)
-        self.setFrameRate(60)
+        self.set_frame_rate(60)
         self.dt = 1/60
-        # self.setCam()
 
-        self.loadGround()
+        self.load_ground()
 
-        self.taskMgr.add(self.update, "update")
+        self.task_mgr.add(self.update, "update")
 
-    def setFrameRate(self, frameRate):
-        self.setFrameRateMeter(True)
-        globalClock.setMode(p3d.ClockObject.MLimited)
-        globalClock.setFrameRate(frameRate)
+    def set_frame_rate(self, frame_rate):
+        self.set_frame_rate_meter(True)
+        globalClock.set_mode(p3d.ClockObject.MLimited)
+        globalClock.set_frame_rate(frame_rate)
 
-    def setCam(self):
-        self.cam.setPos(0, 1, 10)
+    def set_cam(self):
+        self.cam.set_pos(0, 1, 10)
         self.cam.setHpr(0, -90, 0)
         self.camRef = self.camera
         self.camRef.lookAt(0, 1, 0)
 
-    def loadGround(self):
+    def load_ground(self):
         self.ground = self.loader.loadModel("assets/scene/ground.egg")
-        self.ground.reparentTo(self.render)
-        self.ground.setScale(100, 1, 100)
-        self.ground.setPos(0, -1, 0)
-        self.ground.setTexScale(p3d.TextureStage.getDefault(), 50, 50)
+        self.ground.reparent_to(self.render)
+        self.ground.set_scale(100, 1, 100)
+        self.ground.set_pos(0, -1, 0)
+        self.ground.set_tex_scale(p3d.TextureStage.get_default(), 50, 50)
 
     def update(self, task: p3d.PythonTask) -> int:
         return task.cont

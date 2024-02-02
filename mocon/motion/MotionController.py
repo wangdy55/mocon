@@ -4,70 +4,73 @@ from scipy.spatial.transform import Rotation as R
 
 from mocon.character.Character import Character
 from mocon.controller.CharacterController import CharacterController
-from mocon.motion.mvae.model.MotionVAE import MotionMixtureSpecialistVAE
 from scene.Scene import Scene
 
 class MotionController:
     def __init__(
         self,
-        character: Character,
-        characterController: CharacterController,
+        chara: Character,
+        chara_ctrl: CharacterController,
         scene: Scene,
-        npzPath: str,
-        mvaePath: str
+        npz_path: str,
+        mvae_path: str
     ):
-        self.character = character
-        self.characterController = characterController
+        self.chara = chara
+        self.chara_ctrl = chara_ctrl
         self.scene = scene
-        self.startFrame = self.character.startFrame
+        self.frame_idx = self.chara.frame_idx
         # Initialize motion
-        mvaeMocap = np.load(npzPath)
-        self.numNotEe = mvaeMocap["numNotEe"]
-        mvaeMotion = mvaeMocap["mvaeMotion"]
-        self.motion = mvaeMotion[self.startFrame]
+        mvae_mocap = np.load(npz_path)
+        self.num_not_ee = mvae_mocap["num_not_ee"]
+        mvae_motion = mvae_mocap["mvae_motion"]
+        self.motion = mvae_motion[self.frame_idx]
         
-        self.loadMVAE(mvaePath)
+        self.load_mvae(mvae_path)
 
-        self.scene.taskMgr.add(self.update, "updateMotionController")
+        self.scene.taskMgr.add(self.update, "update_motion_controller")
 
     @torch.no_grad()
-    def loadMVAE(self, mvaePath: str):
-        self.mvae = torch.load(mvaePath)
+    def load_mvae(self, mvae_path: str):
+        self.mvae = torch.load(mvae_path)
         self.mvae.eval()
 
-    def updateCharacter(self):
-        # Call Character to update state
+    def sync_character(self):
         vx, vz, wy = self.motion[:3]
-        # localJointTrans = self.motion[3:3+(self.numNotEe-1)*3]
-        localJointVec6d = self.motion[-(self.numNotEe-1)*6:]
+        # local_joint_trans = self.motion[3:3+(self.num_not_ee-1)*3]
+        local_joint_vec6d = self.motion[-(self.num_not_ee-1)*6:]
 
         # local joint orien. -> joint rotation
-        localJointOrien = np.zeros([self.character.numJoints, 4])
-        localJointOrien[..., 3] = 1.
-        localJointVec6d = localJointVec6d.reshape(self.numNotEe-1, 3, 2)
-        localJointZ = np.cross(
-            localJointVec6d[..., 0], localJointVec6d[..., 1], axis=-1
-        ).reshape(self.numNotEe-1, 3, 1)
-        localJointZ /= np.linalg.norm(localJointZ, axis=-2, keepdims=True)
-        localJointMat = np.concatenate((localJointVec6d, localJointZ), axis=-1)
+        local_joint_orien = np.zeros([self.chara.num_joints, 4])
+        local_joint_orien[..., 3] = 1.
+        local_joint_vec6d = local_joint_vec6d.reshape(self.num_not_ee-1, 3, 2)
+        local_joint_z = np.cross(
+            local_joint_vec6d[..., 0],
+            local_joint_vec6d[..., 1],
+            axis=-1
+        ).reshape(self.num_not_ee-1, 3, 1)
+        local_joint_z /= np.linalg.norm(local_joint_z, axis=-2, keepdims=True)
+        local_joint_mat = np.concatenate(
+            (local_joint_vec6d, local_joint_z),
+            axis=-1
+        )
 
         j = 0
-        for i in range(1, self.character.numJoints):
-            if (self.character.channels[i] == 0): # Skip end effectors
+        for i in range(1, self.chara.num_joints):
+            if (self.chara.channels[i] == 0): # Skip end effectors
                 continue
-            localJointOrien[i] = R.from_matrix(localJointMat[j]).as_quat()
+            local_joint_orien[i] = R.from_matrix(local_joint_mat[j]).as_quat()
             j += 1
 
-        fMotion = { # format motion for Character
-            "rootVel": np.array([vx, 0, vz]),
-            "rootAvelY": wy,
-            "localJointOrien": localJointOrien,
-            # "jointTrans": localJointTrans
+        sync_motion = {
+            "root_vel": np.array([vx, 0, vz]),
+            "root_avel_y": wy,
+            "local_joint_orien": local_joint_orien,
+            # "joint_trans": local_joint_trans,
         }
-        self.character.updateState(fMotion)
+        self.chara.sync(sync_motion)
 
     @torch.no_grad()
-    def updateMotion(self):
+    def update_motion(self):
         # Call MVAE to predict motion
         z = torch.normal(
             mean=0, std=1,
@@ -86,14 +89,14 @@ class MotionController:
         output = output.detach().numpy()
         self.motion = output.squeeze()
 
-    def syncController(self):
+    def sync_controller(self):
         # Sync. controller to character
-        self.characterController.node.setX(self.character.rootPos[0])
-        self.characterController.node.setZ(self.character.rootPos[2])
+        self.chara_ctrl.node.setX(self.chara.root_pos[0])
+        self.chara_ctrl.node.setZ(self.chara.root_pos[2])
 
     def update(self, task):
-        self.updateCharacter()
-        self.updateMotion()
-        self.syncController()
+        self.sync_character()
+        self.update_motion()
+        self.sync_controller()
 
         return task.cont

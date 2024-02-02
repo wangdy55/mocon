@@ -11,186 +11,188 @@ M = numJoints
 """
 
 class BVHMotion():
-    def __init__(self, bvhPath: str):
-        self.bvhPath = bvhPath
+    def __init__(self, bvh_path: str):
+        self.bvh_path = bvh_path
 
         # static data
-        self.jointNames = []
-        self.parentIdx = []
+        self.joint_names = []
+        self.parent_idx = []
         self.channels = []
         self.offsets = []
         self.dt = 0.01
 
         # motion data
-        self.startFrame = 0
-        self.numFrames = 0
-        self.frameSize = 0
-        self.jointPos = None  # shape = (N, M, 3)
-        self.jointQuat = None  # shape = (N, M, 4), R.quat
+        self.start_frame = 0
+        self.num_frames = 0
+        self.frame_size = 0
+        self.joint_pos = None  # shape = (N, M, 3)
+        self.joint_quat = None  # shape = (N, M, 4), R.quat
 
-        if self.bvhPath is not None:
-            self.loadBVH()
+        if self.bvh_path is not None:
+            self.load_bvh()
         pass
 
     @property
-    def numJoints(self):
-        return len(self.jointNames)
+    def num_joints(self):
+        return len(self.joint_names)
 
-    def loadStaticData(self) -> tuple:
-        with open(self.bvhPath, "r") as f:
+    def load_static_data(self) -> tuple:
+        with open(self.bvh_path, "r") as f:
+            joint_names = []
+            parent_idx = []
             channels = []
-            jointNames = []
-            parentIdx = []
             offsets = []
-            endSites = []
+            end_sites = []
             dt = 0
 
-            parentStack = [None]
+            parent_stack = [None]
             for line in f:
                 if "ROOT" in line or "JOINT" in line:
-                    jointNames.append(line.split()[-1])
-                    parentIdx.append(parentStack[-1])
+                    joint_names.append(line.split()[-1])
+                    parent_idx.append(parent_stack[-1])
                     channels.append("")
                     offsets.append([0, 0, 0])
 
                 elif "End Site" in line:
-                    endSites.append(len(jointNames))
-                    jointNames.append(parentStack[-1] + "_end")
-                    parentIdx.append(parentStack[-1])
+                    end_sites.append(len(joint_names))
+                    joint_names.append(parent_stack[-1] + "_end")
+                    parent_idx.append(parent_stack[-1])
                     channels.append("")
                     offsets.append([0, 0, 0])
 
                 elif "{" in line:
-                    parentStack.append(jointNames[-1])
+                    parent_stack.append(joint_names[-1])
 
                 elif "}" in line:
-                    parentStack.pop()
+                    parent_stack.pop()
 
                 elif "OFFSET" in line:
                     offsets[-1] = np.array([float(x) for x in line.split()[-3:]]).reshape(1, 3)
 
                 elif "CHANNELS" in line:
-                    transOrder = []
-                    rotOrder = []
+                    pos_order = []
+                    rot_order = []
                     for token in line.split():
                         if "position" in token:
-                            transOrder.append(token[0])
+                            pos_order.append(token[0])
 
                         if "rotation" in token:
-                            rotOrder.append(token[0])
+                            rot_order.append(token[0])
 
-                    channels[-1] = "".join(transOrder) + "".join(rotOrder)
+                    channels[-1] = "".join(pos_order) + "".join(rot_order)
 
                 elif "Frame Time:" in line:
                     dt = float(line.split()[-1])
                     break
 
-        parentIdx = [-1] + [jointNames.index(i) for i in parentIdx[1:]]
+        parent_idx = [-1] + [joint_names.index(i) for i in parent_idx[1:]]
         channels = [len(i) for i in channels]
         offsets = np.concatenate(offsets, axis=0)
-        return jointNames, parentIdx, channels, offsets, dt
+        return joint_names, parent_idx, channels, offsets, dt
 
-    def loadMotionData(self, startFrame=0) -> np.ndarray:
+    def load_motion_data(self, start_frame=0) -> np.ndarray:
         """
         @Parameters:
-            startFrame: int, which frame to start from
+            start_frame: int, which frame to start from
         
         @Returns:
-            motionData: ndarray, shape = (N, frame_size)
+            motion_data: ndarray, shape = (N, frame_size)
         """
-        with open(self.bvhPath, "r") as f:
+        with open(self.bvh_path, "r") as f:
             lines = f.readlines()
             for i in range(len(lines)):
                 if lines[i].startswith("Frame Time"):
                     break
-            motionData = []
+            motion_data = []
             for line in lines[i+1:]:
                 data = [float(x) for x in line.split()]
                 if len(data) == 0:
                     break
-                motionData.append(np.array(data).reshape(1, -1))
-            motionData = np.concatenate(motionData, axis=0)
-        self.startFrame = startFrame
-        return motionData[startFrame:]
+                motion_data.append(np.array(data).reshape(1, -1))
+            motion_data = np.concatenate(motion_data, axis=0)
+        self.start_frame = start_frame
+        return motion_data[start_frame:]
 
-    def loadBVH(self):
-        self.jointNames, self.parentIdx, self.channels, self.offsets, self.dt = self.loadStaticData()
-        motionData = self.loadMotionData()
+    def load_bvh(self):
+        self.joint_names, self.parent_idx, self.channels, self.offsets, self.dt = self.load_static_data()
+        motion_data = self.load_motion_data()
 
-        self.numFrames = motionData.shape[0]
-        self.frameSize = motionData.shape[1]
+        self.num_frames = motion_data.shape[0]
+        self.frame_size = motion_data.shape[1]
 
-        self.jointPos = np.zeros([self.numFrames, self.numJoints, 3])
-        self.jointQuat = np.zeros([self.numFrames, self.numJoints, 4])
-        self.jointQuat[:, :, 3] = 1.0
+        self.joint_pos = np.zeros([self.num_frames, self.num_joints, 3])
+        self.joint_quat = np.zeros([self.num_frames, self.num_joints, 4])
+        self.joint_quat[:, :, 3] = 1.0
 
-        channelIdx = 0
-        for i in range(len(self.jointNames)):
+        channel_idx = 0
+        for i in range(len(self.joint_names)):
             if self.channels[i] == 0:
-                self.jointPos[:, i] = self.offsets[i].reshape(1, 3)
+                self.joint_pos[:, i] = self.offsets[i].reshape(1, 3)
                 continue
 
             if self.channels[i] == 3:
                 position = self.offsets[i].reshape(1, 3)
-                rotation = motionData[:, channelIdx:channelIdx+3]
+                rotation = motion_data[:, channel_idx:channel_idx+3]
             elif self.channels[i] == 6:
-                position = motionData[:, channelIdx:channelIdx+3]
-                rotation = motionData[:, channelIdx+3:channelIdx+6]
-            self.jointPos[:, i, :] = position
-            self.jointQuat[:, i, :] = R.from_euler("XYZ", rotation, degrees=True).as_quat()
+                position = motion_data[:, channel_idx:channel_idx+3]
+                rotation = motion_data[:, channel_idx+3:channel_idx+6]
+            self.joint_pos[:, i, :] = position
+            self.joint_quat[:, i, :] = R.from_euler("XYZ", rotation, degrees=True).as_quat()
 
-            channelIdx += self.channels[i]
+            channel_idx += self.channels[i]
 
         return
 
-    def batchForwardKinematics(self, jointPos=None, jointQuat=None) -> tuple:
+    def batch_fk(self, joint_pos=None, joint_quat=None) -> tuple:
         """
+        batch forward kinematics
+
         @Parameters:
-            jointPos: ndarray, shape = (N, M, 3)
-            jointRot: ndarray, shape = (N, M, 4), R.quat
+            joint_pos: ndarray, shape = (N, M, 3)
+            joint_rot: ndarray, shape = (N, M, 4), R.quat
         
         @Returns:
             jointTrans: ndarray, shape = (N, M, 3)
             jointOrien: ndarray, shape = (N, M, 4), R.quat
         """
-        if jointPos is None:
-            jointPos = self.jointPos
-        if jointQuat is None:
-            jointQuat = self.jointQuat
+        if joint_pos is None:
+            joint_pos = self.joint_pos
+        if joint_quat is None:
+            joint_quat = self.joint_quat
 
-        jointTrans = np.zeros_like(jointPos)
-        jointOrien = np.zeros_like(jointQuat)
-        jointOrien[..., 3] = 1.0
+        joint_trans = np.zeros_like(joint_pos)
+        joint_orien = np.zeros_like(joint_quat)
+        joint_orien[..., 3] = 1.0
 
-        for i, p in enumerate(self.parentIdx):
+        for i, p in enumerate(self.parent_idx):
             if p == -1:
-                jointTrans[:, i] = jointPos[:, i]
-                jointOrien[:, i] = jointQuat[:, i]
+                joint_trans[:, i] = joint_pos[:, i]
+                joint_orien[:, i] = joint_quat[:, i]
             else:
-                Op = R.from_quat(jointOrien[:, p])
-                Oi = Op * R.from_quat(jointQuat[:, i])
-                jointTrans[:, i] = jointTrans[:, p] + Op.apply(jointPos[:, i])
-                jointOrien[:, i] = Oi.as_quat()
+                Op = R.from_quat(joint_orien[:, p])
+                Oi = Op * R.from_quat(joint_quat[:, i])
+                joint_trans[:, i] = joint_trans[:, p] + Op.apply(joint_pos[:, i])
+                joint_orien[:, i] = Oi.as_quat()
 
-        return jointTrans, jointOrien
+        return joint_trans, joint_orien
    
-    def adjustJointNames(self, targetJointNames):
+    def adjust_joint_names(self, targetJointNames):
         """
         Adjust joint seq. to target joint names
         """
-        idx = [self.jointNames.index(name) for name in targetJointNames]
-        idxInv = [targetJointNames.index(name) for name in self.jointNames]
-        self.jointNames = [self.jointNames[i] for i in idx]
-        self.parentIdx = [idxInv[self.parentIdx[i]] for i in idx]
-        self.parentIdx[0] = -1
+        idx = [self.joint_names.index(name) for name in targetJointNames]
+        idx_inv = [targetJointNames.index(name) for name in self.joint_names]
+        self.joint_names = [self.joint_names[i] for i in idx]
+        self.parent_idx = [idx_inv[self.parent_idx[i]] for i in idx]
+        self.parent_idx[0] = -1
         self.joint_channel = [self.channels[i] for i in idx]
-        self.jointPos = self.jointPos[:,idx,:]
-        self.jointQuat = self.jointQuat[:,idx,:]
+        self.joint_pos = self.joint_pos[:,idx,:]
+        self.joint_quat = self.joint_quat[:,idx,:]
     
-    def rawCopy(self):
+    def raw_copy(self):
         return copy.deepcopy(self)
     
-    def subSeq(self, start, end):
+    def sub_seq(self, start, end):
         """
         Get a sub sequence info. of joint position and rotation
 
@@ -200,23 +202,28 @@ class BVHMotion():
         @Returns:
             res: sub sequence
         """
-        res = self.rawCopy()
-        res.jointPos = res.jointPos[start:end,:,:]
-        res.jointQuat = res.jointQuat[start:end,:,:]
+        res = self.raw_copy()
+        res.joint_pos = res.joint_pos[start:end,:,:]
+        res.joint_quat = res.joint_quat[start:end,:,:]
         return res
     
     def append(self, other):
         """
         Append a motion to the end
         """
-        other = other.rawCopy()
-        other.adjustJointNames(self.jointNames)
-        self.jointPos = np.concatenate((self.jointPos, other.jointPos), axis=0)
-        self.jointQuat = np.concatenate((self.jointQuat, other.jointQuat), axis=0)
-        pass
+        other = other.raw_copy()
+        other.adjust_joint_names(self.joint_names)
+        self.joint_pos = np.concatenate(
+            (self.joint_pos, other.joint_pos),
+            axis=0
+        )
+        self.joint_quat = np.concatenate(
+            (self.joint_quat, other.joint_quat), 
+            axis=0
+        )
     
     # for MotionVAE motion format
-    def getLocalJointInfo(self) -> tuple:
+    def get_local_joint_info(self) -> tuple:
         """
         Get local (root based) joint info. in MotionVAE format
 
@@ -224,33 +231,34 @@ class BVHMotion():
             local joint info: tuple, (Jp, Jv, Jr)
         """
         # local batch FK -> local joint position (Jp)
-        localJointPos = self.jointPos.copy()
-        localJointPos[:, 0] = [0., 0., 0.]
-        localJointQuat = self.jointQuat.copy()
-        localJointQuat[:, 0] = [0., 0., 0., 1.]
-        localJointTrans, localJointOrien = self.batchForwardKinematics(
-            jointPos=localJointPos, jointQuat=localJointQuat
+        local_joint_pos = self.joint_pos.copy()
+        local_joint_pos[:, 0] = [0., 0., 0.]
+        local_joint_quat = self.joint_quat.copy()
+        local_joint_quat[:, 0] = [0., 0., 0., 1.]
+        local_joint_trans, local_joint_orien = self.batch_fk(
+            joint_pos=local_joint_pos,
+            joint_quat=local_joint_quat
         )
 
         # Remove end effector info.
-        notEe = [i for i, ch in enumerate(self.channels) if ch != 0]
-        localJointTrans = localJointTrans[:, notEe]
-        localJointOrien = localJointOrien[:, notEe]
+        not_ee = [i for i, ch in enumerate(self.channels) if ch != 0]
+        local_joint_trans = local_joint_trans[:, not_ee]
+        local_joint_orien = local_joint_orien[:, not_ee]
 
-        # Jp -> Jv
-        localJointVel = (localJointTrans[1:] - localJointTrans[:-1]) / self.dt # shape = (N-1, M, 3)
+        # Jp -> Jv, shape = (N-1, M, 3)
+        local_joint_vel = (local_joint_trans[1:] - local_joint_trans[:-1]) / self.dt
 
         # local orientation -> local joint vec6d (Jr)
         # vec6d: first 2 col (xy) of local orientation matrix
-        localJointMat = np.zeros([self.numFrames, len(notEe), 3, 3])
-        for i in range(len(notEe)):
-            localJointMat[:, i] = R.from_quat(localJointOrien[:, i]).as_matrix()
-        localJointVec6d = localJointMat[..., :2]
-        localJointVec6d = localJointVec6d.reshape(self.numFrames, len(notEe), -1)
+        local_joint_mat = np.zeros([self.num_frames, len(not_ee), 3, 3])
+        for i in range(len(not_ee)):
+            local_joint_mat[:, i] = R.from_quat(local_joint_orien[:, i]).as_matrix()
+        local_joint_vet6d = local_joint_mat[..., :2]
+        local_joint_vet6d = local_joint_vet6d.reshape(self.num_frames, len(not_ee), -1)
 
-        return localJointTrans[:-1], localJointVel, localJointVec6d[:-1]
+        return local_joint_trans[:-1], local_joint_vel, local_joint_vet6d[:-1]
 
-    def saveMvaeMocap(self, npzPath: str):
+    def save_mvae_mocap(self, npz_path: str):
         """
         Convert raw motion data to
         MVAE motion format:
@@ -263,127 +271,128 @@ class BVHMotion():
 
         @Returns:
         """
-        if os.path.exists(npzPath):
-            print(f"{npzPath} already exists, skip saving")
+        if os.path.exists(npz_path):
+            print(f"{npz_path} already exists, skip saving")
             return
 
         # root info: (r'x, r'z, w_y)
-        rootQuat = self.jointQuat[:, 0].copy()
-        rootPos = self.jointPos[:, 0].copy()
+        root_quat = self.joint_quat[:, 0].copy()
+        root_pos = self.joint_pos[:, 0].copy()
 
         # root orientation -> w_y (rad/s)
-        rootAngleY = QuatHelper.yExtractRad(rootQuat)
-        rootAvelY = rootAngleY[1:] - rootAngleY[:-1]
+        root_angle_y = QuatHelper.extract_y_rad(root_quat)
+        root_avel_y = root_angle_y[1:] - root_angle_y[:-1]
         # Fix rotation around ±π
-        rootAvelY[rootAvelY >= np.pi] -= 2 * np.pi
-        rootAvelY[rootAvelY <= -np.pi] += 2 * np.pi
-        rootAvelY /= self.dt
+        root_avel_y[root_avel_y >= np.pi] -= 2 * np.pi
+        root_avel_y[root_avel_y <= -np.pi] += 2 * np.pi
+        root_avel_y /= self.dt
 
         # root translation -> r'x, r'z
-        rootVel = (rootPos[1:, :3] - rootPos[:-1, :3]) / self.dt # shape = (N-1, 3)
+        root_vel = (root_pos[1:, :3] - root_pos[:-1, :3]) / self.dt # shape = (N-1, 3)
         # global velocity -> local velocity
-        rootRot = R.from_quat(rootQuat)[:-1]
-        rootVelXz = rootRot.apply(rootVel, inverse=True)[:, [0, 2]]
+        root_rot = R.from_quat(root_quat)[:-1]
+        root_vel_xz = root_rot.apply(root_vel, inverse=True)[:, [0, 2]]
         
         # local batch FK -> Jp, Jv, Jr
-        localJointTrans, localJointVel, localJointVec6d = self.getLocalJointInfo()
-        numNotEe = localJointTrans.shape[1]
+        local_joint_trans, local_joint_vel, local_joint_vec6d = self.get_local_joint_info()
+        num_not_ee = local_joint_trans.shape[1]
 
-        # Remove root info and reshape
-        localJointTrans = localJointTrans[:, 1:].reshape(self.numFrames-1, -1)
-        localJointVel = localJointVel[:, 1:].reshape(self.numFrames-1, -1)
-        localJointVec6d = localJointVec6d[:, 1:].reshape(self.numFrames-1, -1)
+        # Remove root info. and reshape
+        local_joint_trans = local_joint_trans[:, 1:].reshape(self.num_frames-1, -1)
+        local_joint_vel = local_joint_vel[:, 1:].reshape(self.num_frames-1, -1)
+        local_joint_vec6d = local_joint_vec6d[:, 1:].reshape(self.num_frames-1, -1)
 
         # Cat. -> (v_x, v_z, w_y(1), Jp(19*3), Jv(19*3), Jr(19*6)), shape = (N-1, frame_size=3+228)
-        mvaeMotion = np.concatenate(
-            (rootVelXz, rootAvelY.reshape(-1, 1), localJointTrans, localJointVel, localJointVec6d),
+        mvae_motion = np.concatenate(
+            (root_vel_xz, root_avel_y.reshape(-1, 1), local_joint_trans, local_joint_vel, local_joint_vec6d),
             axis=1
         )
 
-        np.savez(npzPath,
-            numFrames=self.numFrames,
-            numJoints=self.numJoints,
-            numNotEe=numNotEe,
-            rootAngleYStart=rootAngleY[0],
-            rootPosStart=rootPos[0],
-            mvaeMotion=mvaeMotion
+        np.savez(
+            npz_path,
+            nun_frames=self.num_frames,
+            num_joints=self.num_joints,
+            num_not_ee=num_not_ee,
+            root_angle_y_start=root_angle_y[0],
+            root_pos_start=root_pos[0],
+            mvae_motion=mvae_motion
         )
-        print("MVAE mocap saved to", npzPath)
+        print("MVAE mocap saved to", npz_path)
 
-    def loadMvaeMocap(self, npzPath:str) -> tuple:
+    def load_mvae_mocap(self, npz_path:str) -> tuple:
         """
         Recover BVH mocap from MVAE mocap
 
         @Parameters:
-            npzPath: str, path to local_motion.npz
+            npz_path: str, path to local_motion.npz
 
         @Returns:
-            jointPos: ndarray, shape = (N, M, 3)
-            jointQuat: ndarray, shape = (N, M, 4), R.quat
+            joint_pos: ndarray, shape = (N, M, 3)
+            joint_quat: ndarray, shape = (N, M, 4), R.quat
         """
 
         # mvae motion -> joint position, joint rotation, for batch FK
-        mvaeMocap = np.load(npzPath)
-        numFrames = mvaeMocap["numFrames"]
-        numJoints = mvaeMocap["numJoints"]
-        numNotEe = mvaeMocap["numNotEe"]
-        rootAngleYStart = mvaeMocap["rootAngleYStart"]
-        rootPosStart = mvaeMocap["rootPosStart"]
-        mvaeMotion = mvaeMocap["mvaeMotion"]
+        mvae_mocap = np.load(npz_path)
+        num_frames = mvae_mocap["num_frames"]
+        num_joints = mvae_mocap["num_joints"]
+        num_not_ee = mvae_mocap["num_not_ee"]
+        root_angle_y_start = mvae_mocap["root_angle_y_start"]
+        root_pos_start = mvae_mocap["root_pos_start"]
+        mvae_motion = mvae_mocap["mvae_motion"]
         # MVAE motion sliced
-        rootVelXz = mvaeMotion[:, :2]
-        rootAvelY = mvaeMotion[:, 2]
-        localJointVec6d = mvaeMotion[:, -(numNotEe-1)*6:]
+        root_vel_xz = mvae_motion[:, :2]
+        root_avel_y = mvae_motion[:, 2]
+        local_joint_vec6d = mvae_motion[:, -(num_not_ee-1)*6:]
 
         # root rotation
-        rootAngleY = np.zeros([numFrames])
-        rootAngleY[0] = rootAngleYStart
-        for i in range(1, numFrames):
-            rootAngleY[i] = rootAngleY[i-1] + rootAvelY[i-1] * self.dt
-        rootAngleY = rootAngleY.reshape(numFrames, 1)
-        rootRot = R.from_euler("Y", rootAngleY[:-1], degrees=False)
-        rootQuat = rootRot.as_quat()
+        root_angle_y = np.zeros([num_frames])
+        root_angle_y[0] = root_angle_y_start
+        for i in range(1, num_frames):
+            root_angle_y[i] = root_angle_y[i-1] + root_avel_y[i-1] * self.dt
+        root_angle_y = root_angle_y.reshape(num_frames, 1)
+        root_rot = R.from_euler("Y", root_angle_y[:-1], degrees=False)
+        root_quat = root_rot.as_quat()
 
         # root position
-        zeroVel = np.zeros([numFrames-1, 1])
-        rootVelX = rootVelXz[:, 0].reshape(-1, 1)
-        rootVelZ = rootVelXz[:, 1].reshape(-1, 1)
-        rootVel = np.concatenate((rootVelX, zeroVel, rootVelZ), axis=1)
+        zero_vel = np.zeros([num_frames-1, 1])
+        root_vel_x = root_vel_xz[:, 0].reshape(-1, 1)
+        root_vel_z = root_vel_xz[:, 1].reshape(-1, 1)
+        root_vel = np.concatenate((root_vel_x, zero_vel, root_vel_z), axis=1)
 
-        rootPos = np.zeros([numFrames-1, 3])
-        rootPos[0] = rootPosStart
-        for i in range(1, numFrames-1):
-            rootPos[i] = rootPos[i-1] + rootRot[i-1].apply(rootVel[i-1]) * self.dt
+        root_pos = np.zeros([num_frames-1, 3])
+        root_pos[0] = root_pos_start
+        for i in range(1, num_frames-1):
+            root_pos[i] = root_pos[i-1] + root_rot[i-1].apply(root_vel[i-1]) * self.dt
 
         # local joint orien. -> joint rotation
-        jointOrien = np.zeros([numFrames-1, numJoints, 4])
-        jointOrien[..., 3] = 1.
-        localJointVec6d = localJointVec6d.reshape(numFrames-1, numNotEe-1, 3, 2)
-        localJointZ = np.cross(
-            localJointVec6d[..., 0], localJointVec6d[..., 1], axis=-1
-        ).reshape(numFrames-1, numNotEe-1, 3, 1)
-        localJointZ /= np.linalg.norm(localJointZ, axis=-2, keepdims=True)
-        localJointMat = np.concatenate((localJointVec6d, localJointZ), axis=-1)
+        joint_orien = np.zeros([num_frames-1, num_joints, 4])
+        joint_orien[..., 3] = 1.
+        local_joint_vec6d = local_joint_vec6d.reshape(num_frames-1, num_not_ee-1, 3, 2)
+        local_joint_z = np.cross(
+            local_joint_vec6d[..., 0], local_joint_vec6d[..., 1], axis=-1
+        ).reshape(num_frames-1, num_not_ee-1, 3, 1)
+        local_joint_z /= np.linalg.norm(local_joint_z, axis=-2, keepdims=True)
+        local_joint_mat = np.concatenate((local_joint_vec6d, local_joint_z), axis=-1)
 
         j = 0
-        for i in range(1, numJoints):
+        for i in range(1, num_joints):
             if (self.channels[i] == 0): # Skip end effectors
                 continue
-            jointOrien[:, i] = R.from_matrix(localJointMat[:, j]).as_quat()
+            joint_orien[:, i] = R.from_matrix(local_joint_mat[:, j]).as_quat()
             j += 1
 
-        # jointPos & jointRot
-        jointPos = np.zeros((numFrames-1, numJoints, 3))
-        jointPos[:, 1:, :] = np.tile(self.offsets[1:], (self.numFrames-1, 1, 1))
-        jointPos[:, 0] = rootPos
+        # joint position & rotation
+        joint_pos = np.zeros((num_frames-1, num_joints, 3))
+        joint_pos[:, 1:, :] = np.tile(self.offsets[1:], (self.num_frames-1, 1, 1))
+        joint_pos[:, 0] = root_pos
 
-        jointQuat = np.zeros_like(jointOrien)
-        jointQuat[..., 3] = 1.
-        for i, p in enumerate(self.parentIdx):
+        joint_quat = np.zeros_like(joint_orien)
+        joint_quat[..., 3] = 1.
+        for i, p in enumerate(self.parent_idx):
             if p == -1: continue
-            Rp = R.from_quat(jointOrien[:, p])
-            Ri = Rp.inv() * R.from_quat(jointOrien[:, i])
-            jointQuat[:, i] = Ri.as_quat()
-        jointQuat[:, 0, :] = rootQuat
+            Rp = R.from_quat(joint_orien[:, p])
+            Ri = Rp.inv() * R.from_quat(joint_orien[:, i])
+            joint_quat[:, i] = Ri.as_quat()
+        joint_quat[:, 0, :] = root_quat
 
-        return jointPos, jointQuat
+        return joint_pos, joint_quat
