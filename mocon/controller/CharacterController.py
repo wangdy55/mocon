@@ -51,8 +51,8 @@ class CharacterController(DirectObject):
             node = self.scene.render.attach_new_node(f"future_node{i}")
             node.set_pos(0, 0.01, 0)
             if i == 0:
-                Visualizer.drawArrow(node, color=arrow_color)
-            node.reparentTo(self.scene.render)
+                Visualizer.draw_arrow(node, color=arrow_color)
+            node.reparent_to(self.scene.render)
             self.future_nodes.append(node)
         self._node = self.future_nodes[0]
 
@@ -190,7 +190,7 @@ class CharacterController(DirectObject):
         rot_trajactory = rot_trajactory[..., [3, 0, 1, 2]]
         for i in range(self.future_wind):
             self.future_nodes[i].set_pos(*pos_trajactory[i])
-            self.future_nodes[i].setQuat(p3d.Quat(*rot_trajactory[i]))
+            self.future_nodes[i].set_quat(p3d.Quat(*rot_trajactory[i]))
         
         '''
         # Update camera position to controller

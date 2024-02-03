@@ -32,7 +32,7 @@ class Model(DirectObject):
             self.root.get_x(), 0 , self.root.get_z()
         )
         self.load_light()
-        self.scene.task_mgr.add(self.update_light, "updateLight")
+        self.scene.task_mgr.add(self.update_light, "update_light")
 
         # joint name index
         self.name2idx = {name: i for i, name in enumerate(self.joint_names)}
@@ -164,7 +164,7 @@ class Model(DirectObject):
 
     def _set_joint_rot(self, name, quat):
         joint_idx = self.name2idx[name]
-        self.joints[joint_idx].setQuat(
+        self.joints[joint_idx].set_quat(
             self.scene.render,
             p3d.Quat(*quat[..., [3, 0, 1, 2]].tolist())
         )

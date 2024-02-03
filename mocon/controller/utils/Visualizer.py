@@ -4,10 +4,10 @@ import numpy as np
 
 class Visualizer:
     @staticmethod
-    def drawArrow(nodePath, color: list):
-        node = nodePath.attachNewNode("arrow")
+    def draw_arrow(node_path, color: list):
+        node = node_path.attachNewNode("arrow")
         BuildGeometry.addArrowGeom(node, sizeX=0.1, sizeY=0.3, color=color)
-        node.setQuat(p3d.Quat(0, 0, 1, 0) * p3d.Quat(0.707, 0.707, 0, 0))
-        node.setPos(0, 0, 0.15)
-        node.wrtReparentTo(nodePath)
+        node.set_quat(p3d.Quat(0, 0, 1, 0) * p3d.Quat(0.707, 0.707, 0, 0))
+        node.set_pos(0, 0, 0.15)
+        node.wrt_reparent_to(node_path)
         return node
