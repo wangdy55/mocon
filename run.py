@@ -3,11 +3,11 @@ from scene.Model import Model
 from mocon.character.Character import Character
 from mocon.controller.CameraController import CameraController
 from mocon.controller.CharacterController import CharacterController
-from mocon.motion.MotionController import MotionController
+from mocon.controller.MotionController import MotionController
 
 bvh_path = "mocon/motion/mocap/bvh/walk1_subject5.bvh"
 npz_path = "mocon/motion/mocap/npz/walk1_subject5.npz"
-mvae_path = "mocon/motion/mvae/model/walk1_subject5.pt"
+mvae_path = "mocon/motion/mvae/model/walk1_subject5_240129_190220.pt"
 
 def main():
     scene = Scene()

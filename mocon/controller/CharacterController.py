@@ -131,7 +131,7 @@ class CharacterController(DirectObject):
     def update_pos(self):
         init_pos = self.node.get_pos()
         init_rot = self.rotation
-        self.subStep = 20
+        self.sub_step = 20
 
         # Get global target velocity and rotation
         cam_fwd = self.camera_ctrl.cam_fwd
@@ -151,7 +151,7 @@ class CharacterController(DirectObject):
         self.future_avel = [new_avel]
         for i in range(self.future_wind):
             new_rot, new_avel = Interpolator.simulation_rotations_update(
-                new_rot, new_avel, cur_target_rot, self.halflife, self.dt*self.subStep
+                new_rot, new_avel, cur_target_rot, self.halflife, self.dt*self.sub_step
             )
             rot_trajactory.append(new_rot)
             self.future_avel.append(new_avel.copy())
@@ -162,7 +162,7 @@ class CharacterController(DirectObject):
         self.future_vel = [new_vel]
         for i in range(self.future_wind-1):
             new_pos, new_vel, new_acc = Interpolator.simulation_positions_update(
-                new_pos, new_vel, new_acc, cur_target_vel, self.halflife, self.dt*self.subStep
+                new_pos, new_vel, new_acc, cur_target_vel, self.halflife, self.dt*self.sub_step
             )
             pos_trajactory.append(new_pos)
             self.future_vel.append(new_vel.copy())

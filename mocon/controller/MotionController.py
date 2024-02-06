@@ -27,7 +27,7 @@ class MotionController:
         
         self.load_mvae(mvae_path)
 
-        self.scene.taskMgr.add(self.update, "update_motion_controller")
+        self.scene.task_mgr.add(self.update, "update_motion_controller")
 
     @torch.no_grad()
     def load_mvae(self, mvae_path: str):
