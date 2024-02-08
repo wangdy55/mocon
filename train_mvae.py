@@ -81,7 +81,7 @@ def main():
     args.initial_lr = 1e-4
     args.final_lr = 1e-7
 
-    raw_data = np.load(args.mocap_file)["mvaeMotion"]
+    raw_data = np.load(args.mocap_file)["mvae_motion"]
     mocap_data = torch.from_numpy(raw_data).float().to(args.device)
 
     max = mocap_data.max(dim=0)[0]

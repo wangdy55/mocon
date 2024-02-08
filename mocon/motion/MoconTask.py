@@ -21,6 +21,7 @@ class MoconTask:
         self.max_timestep = 1800
 
         self.num_condition_frames = self.mvae_model.num_condition_frames
+        self.num_future_predictions = self.mvae_model.num_future_predictions
         self.history_size = 5
         assert (
             self.history_size >= self.num_condition_frames
@@ -30,7 +31,9 @@ class MoconTask:
         ).to(self.device)
 
         self.start_indices = torch.randint(
-            low=0, high=self.mvae_motion.shape[0], size=(self.num_parallel,)
+            low=0,
+            high=self.mvae_motion.shape[0],
+            size=(self.num_parallel,)
         ).long().to(self.device)
         self.root_facing = torch.zeros(
             (self.num_parallel, 1,)
@@ -38,20 +41,17 @@ class MoconTask:
         self.root_xz = torch.zeros(
             (self.num_parallel, 2,)
         ).to(self.device)
-        self.vel_xz = torch.zeros(
-            (self.num_parallel, 2,)
-        ).to(self.device)
 
         # control param.
         target_size = 2
-        self.target = torch.zeros(
+        self.target = torch.zeros( # global target
             (self.num_parallel, target_size,)
         ).to(self.device)
-        self.target_direct = torch.zeros(
+        self.target_direct = torch.zeros( # global direction
             (self.num_parallel, 1,)
         ).to(self.device)
-        self.ctrl_condition_size = (
-            self.frame_size * self.num_condition_frames
+        self.obs_size = (
+            self.num_condition_frames * self.frame_size
         ) + target_size
 
     @torch.no_grad()
@@ -65,59 +65,13 @@ class MoconTask:
         self.mvae_model = torch.load(mvae_path, map_location=self.device)
         self.mvae_model.eval()
 
-    def get_2d_rotmat(self, yaw) -> torch.Tensor:
-        yaw = -yaw # reverse for xz coord. angle express
-        col1 = torch.cat((yaw.cos(), yaw.sin()), dim=-1)
-        col2 = torch.cat((-yaw.sin(), yaw.cos()), dim=-1)
-        rotmat = torch.stack((col1, col2), dim=-1)
-        return rotmat
+    def reset(self):
+        self.root_xz.zero_()
+        self.root_facing.zero_()
+        self.timestep = 0
 
-    def integrate_root_info(self, next_frame):
-        next_frame = next_frame[:, 0, :]
-
-        rotmat = self.get_2d_rotmat(self.root_facing)
-        local_vel_xz = next_frame[..., :2]
-        vel_xz = (
-            rotmat * local_vel_xz.unsqueeze(dim=-1)
-        ).sum(dim=2)
-        self.root_xz.add_(vel_xz * self.dt)
-
-        avel_y = next_frame[:, 2]
-        self.root_facing.add_(
-            (avel_y * self.dt).unsqueeze(dim=-1)
-        ).remainder_(2*np.pi)
-
-        self.history = self.history.roll(1, dims=1)
-        self.history[:, 0].copy_(next_frame)
-
-        # foot contact
-        pass
-
-    def get_mvae_condition(self, normalize=False, flatten=True):
-        condition = self.history[:, :self.num_condition_frames]
-        if normalize:
-            condition = self.mvae_model.normalize(condition)
-        if flatten:
-            condition = condition.flatten(start_dim=1, end_dim=2)
-        return condition
-    
-    def get_mvae_next_frame(self, action):
-        # action: z
-        self.action = action
-        condition = self.get_mvae_condition(normalize=True)
-
-        # with torch.no_grad():
-        mvae_output = self.mvae_model.sample(
-            action, condition, deterministic=True
-        )
-        mvae_output = mvae_output.view(
-            -1,
-            self.mvae_model.num_future_predictions,
-            self.frame_size
-        )
-
-        next_frame = self.mvae_model.denormalize(mvae_output)
-        return next_frame
+        self.reset_target()
+        self.reset_initial_frames()
 
     def reset_initial_frames(self):
         self.start_indices.random_(
@@ -137,20 +91,43 @@ class MoconTask:
             self.mvae_motion[condition_range]
         )
 
+    def get_2d_rotmat(self, yaw) -> torch.Tensor:
+        yaw = -yaw # reverse for xz coord. angle express
+        col1 = torch.cat((yaw.cos(), yaw.sin()), dim=-1)
+        col2 = torch.cat((-yaw.sin(), yaw.cos()), dim=-1)
+        rotmat = torch.stack((col1, col2), dim=-1)
+        return rotmat
+
+    def get_mvae_condition(self, normalize=False, flatten=True):
+        condition = self.history[:, :self.num_condition_frames]
+        if normalize:
+            condition = self.mvae_model.normalize(condition)
+        if flatten:
+            condition = condition.flatten(start_dim=1, end_dim=2)
+        return condition
+    
+    def get_mvae_output(self, action):
+        condition = self.get_mvae_condition(normalize=True)
+
+        # with torch.no_grad():
+        mvae_output = self.mvae_model.sample(
+            action, condition, deterministic=True
+        )
+        mvae_output = mvae_output.view(
+            self.num_parallel,
+            self.num_future_predictions,
+            self.frame_size
+        )
+
+        next_frame = self.mvae_model.denormalize(mvae_output)
+        return next_frame
+
     def get_target_delta_and_angle(self):
         target_delta = self.target - self.root_xz
         target_angle = self.root_facing + torch.atan2(
             target_delta[:, 1], target_delta[:, 0]
         ).unsqueeze(dim=1)
         return target_delta, target_angle
-    
-    def reset(self):
-        self.root_xz.zero_()
-        self.root_facing.zero_()
-        self.timestep = 0
-
-        self.reset_target()
-        self.reset_initial_frames()
 
     def reset_target(self):
         facing_switch_every = 240
@@ -162,21 +139,44 @@ class MoconTask:
         self.target[:, 0].add_(10 * self.target_direct.cos().squeeze())
         self.target[:, 1].add_(10 * self.target_direct.sin().squeeze())
 
-    def get_controller_input(self):
+    def get_observation(self):
         condition = self.get_mvae_condition(normalize=False)
         _, target_angle = self.get_target_delta_and_angle()
-        ctrl_input = torch.cat(
+        obs = torch.cat(
             (condition, target_angle.cos(), target_angle.sin()),
             dim=-1
         )
-        return ctrl_input
+        return obs
 
     def get_next_frame(self, action):
         # action = action * self.action_scale
-        next_frame = self.get_mvae_next_frame(action)
+        mvae_output = self.get_mvae_output(action)
+        next_frame = mvae_output[:, 0]
         return next_frame
 
-    def update(self, action):
-        next_frame = self.get_next_frame(action)
-        self.integrate_root_info(next_frame)
+    def calc_root_info(self, next_frame):
+        rotmat = self.get_2d_rotmat(self.root_facing)
+        local_vel_xz = next_frame[..., :2]
+        vel_xz = (
+            rotmat * local_vel_xz.unsqueeze(dim=-1)
+        ).sum(dim=2)
+
+        avel_y = next_frame[:, 2]
+
+        return vel_xz, avel_y
+
+    @torch.no_grad()
+    def integrate_root_info(self, next_frame):
+        vel_xz, avel_y = self.calc_root_info(next_frame)
+
+        self.root_xz.add_(vel_xz * self.dt)
+        self.root_facing.add_(
+            (avel_y * self.dt).unsqueeze(dim=-1)
+        ).remainder_(2*np.pi)
+
+        self.history = self.history.roll(1, dims=1)
+        self.history[:, 0].copy_(next_frame.detach())
+
+        # TODO: foot contact
+        
         self.timestep += 1
