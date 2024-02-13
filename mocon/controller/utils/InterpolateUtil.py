@@ -4,7 +4,7 @@ import math
 def from_euler(e):
     return R.from_euler('XYZ', e, degrees=True)
 
-class Interpolator():
+class InterpolateUtil():
     @staticmethod
     def lerp(a, b, t):
         return a + (b - a) * t
@@ -15,7 +15,7 @@ class Interpolator():
 
     @staticmethod
     def simulation_rotations_update(rot, avel, target_rot, halflife, dt):
-        d = Interpolator.halflife2dampling(halflife)/2
+        d = InterpolateUtil.halflife2dampling(halflife)/2
         j0 = R.from_quat(rot) * R.from_quat(target_rot).inv()
         j0 = j0.as_rotvec()
         j1 = avel + d * j0
@@ -27,7 +27,7 @@ class Interpolator():
         return rot, avel
 
     def simulation_positions_update(pos, vel, acc, target_vel, halflife, dt):
-        d = Interpolator.halflife2dampling(halflife)/2
+        d = InterpolateUtil.halflife2dampling(halflife)/2
         j0 = vel - target_vel
         j1 = acc + d * j0
         eydt = math.exp(-d * dt)
@@ -41,7 +41,7 @@ class Interpolator():
     
     @staticmethod
     def decay_spring_implicit_damping_rot(rot, avel, halflife, dt):
-        d = Interpolator.halflife2dampling(halflife)/2
+        d = InterpolateUtil.halflife2dampling(halflife)/2
         j0 = from_euler(rot).as_rotvec()
         j1 = avel + d * j0
         eydt = math.exp(-d * dt)
@@ -53,7 +53,7 @@ class Interpolator():
     
     @staticmethod
     def decay_spring_implicit_damping_pos(pos, vel, halflife, dt):
-        d = Interpolator.halflife2dampling(halflife)/2
+        d = InterpolateUtil.halflife2dampling(halflife)/2
         j1 = vel + d * pos
         eydt = math.exp(-d * dt)
         pos = eydt * (pos+j1*dt)
@@ -62,7 +62,7 @@ class Interpolator():
     
     @staticmethod
     def inertialize_transition_rot(prev_off_rot, prev_off_avel, src_rot, src_avel, dst_rot, dst_avel):
-        prev_off_rot, prev_off_avel = Interpolator.decay_spring_implicit_damping_rot(prev_off_rot, prev_off_avel, 1/20, 1/60)
+        prev_off_rot, prev_off_avel = InterpolateUtil.decay_spring_implicit_damping_rot(prev_off_rot, prev_off_avel, 1/20, 1/60)
         off_rot = from_euler(prev_off_rot) * from_euler(src_rot) * from_euler(dst_rot).inv()
         off_avel = prev_off_avel + src_avel - dst_avel
         # off_rot = from_euler(src_rot) * from_euler(dst_rot).inv()
@@ -71,21 +71,21 @@ class Interpolator():
     
     @staticmethod
     def inertialize_update_rot(prev_off_rot, prev_off_avel, rot, avel, halflife, dt):
-        off_rot , off_avel = Interpolator.decay_spring_implicit_damping_rot(prev_off_rot, prev_off_avel, halflife, dt)
+        off_rot , off_avel = InterpolateUtil.decay_spring_implicit_damping_rot(prev_off_rot, prev_off_avel, halflife, dt)
         rot = from_euler(off_rot) * from_euler(rot)
         avel = off_avel + avel
         return rot.as_euler('XYZ', degrees=True), avel, off_rot, off_avel
     
     @staticmethod
     def inertialize_transition_pos(prev_off_pos, prev_off_vel, src_pos, src_vel, dst_pos, dst_vel):
-        prev_off_pos, prev_off_vel = Interpolator.decay_spring_implicit_damping_pos(prev_off_pos, prev_off_vel, 1/20, 1/60)
+        prev_off_pos, prev_off_vel = InterpolateUtil.decay_spring_implicit_damping_pos(prev_off_pos, prev_off_vel, 1/20, 1/60)
         off_pos = prev_off_pos + src_pos - dst_pos
         off_vel = prev_off_vel + src_vel - dst_vel
         return off_pos, off_vel
     
     @staticmethod
     def inertialize_update_pos(prev_off_pos, prev_off_vel, pos, vel, halflife, dt):
-        off_pos , off_vel = Interpolator.decay_spring_implicit_damping_pos(prev_off_pos, prev_off_vel, halflife, dt)
+        off_pos , off_vel = InterpolateUtil.decay_spring_implicit_damping_pos(prev_off_pos, prev_off_vel, halflife, dt)
         pos = off_pos + pos
         vel = off_vel + vel
         return pos, vel, off_pos, off_vel

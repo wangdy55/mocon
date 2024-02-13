@@ -4,23 +4,31 @@ from scipy.spatial.transform import Rotation as R
 
 from scene.Scene import Scene
 from mocon.motion.BVHMotion import BVHMotion
-from mocon.motion.utils.QuatHelper import QuatHelper
+from mocon.motion.utils.QuatUtil import QuatUtil
 
 class Character:
     def __init__(
         self,
-        model: DirectObject,
         scene: Scene,
-        bvh_path: str
+        model
     ):
         self.model = model
         self.scene = scene
 
-        self.bvh_motion = BVHMotion(bvh_path)
-        self.load_bvh_info(frame_idx=300)
+        self.node = self.scene.render.attach_new_node("chara")
+        self.node.set_pos(self.scene.render, 0, 0, 0)
 
-        self.scene.taskMgr.add(self.update, "update_chara")
+        # self.scene.task_mgr.add(self.update, "update_chara")
 
+    @property
+    def x(self):
+        return self.node.get_x()
+    
+    @property
+    def z(self):
+        return self.node.get_z()
+
+'''
     @property
     def root_pos(self):
         return self.joint_trans[0]
@@ -55,7 +63,7 @@ class Character:
         root_rot = R.from_quat(root_quat)
 
         root_pos = root_pos + root_rot.apply(root_vel) * self.dt
-        root_angle_y = QuatHelper.extract_y_rad(root_quat[None, ...])
+        root_angle_y = QuatUtil.extract_y_rad(root_quat[None, ...])
         root_angle_y = root_angle_y.squeeze() + root_avel_y * self.dt
         root_quat = R.from_euler("Y", root_angle_y, degrees=False).as_quat()
 
@@ -117,3 +125,4 @@ class Character:
         ]
         jointQuat = np.array(jointQuat)
         return jointQuat
+'''

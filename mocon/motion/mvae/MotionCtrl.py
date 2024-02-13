@@ -3,14 +3,14 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 from mocon.character.Character import Character
-from mocon.controller.CharacterController import CharacterController
+from mocon.controller.CharacterCtrl import CharacterCtrl
 from scene.Scene import Scene
 
-class MotionController:
+class MotionCtrl:
     def __init__(
         self,
         chara: Character,
-        chara_ctrl: CharacterController,
+        chara_ctrl: CharacterCtrl,
         scene: Scene,
         npz_path: str,
         mvae_path: str

@@ -3,7 +3,7 @@ import copy
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-from mocon.motion.utils.QuatHelper import QuatHelper
+from mocon.motion.utils.QuatUtil import QuatUtil
 
 """
 N = numFrames
@@ -280,7 +280,7 @@ class BVHMotion():
         root_pos = self.joint_pos[:, 0].copy()
 
         # root orientation -> w_y (rad/s)
-        root_angle_y = QuatHelper.extract_y_rad(root_quat)
+        root_angle_y = QuatUtil.extract_y_rad(root_quat)
         root_avel_y = root_angle_y[1:] - root_angle_y[:-1]
         # Fix rotation around ±π
         root_avel_y[root_avel_y >= np.pi] -= 2 * np.pi

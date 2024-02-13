@@ -4,8 +4,8 @@ from tensorboardX import SummaryWriter
 import numpy as np
 import os, time
 
-from mocon.motion.MoconTask import MoconTask
-from mocon.motion.mvae.model.MotionVAEController import MotionVAEController
+from mocon.motion.motion_vae.train.MoconTask import MoconTask
+from mocon.motion.motion_vae.model.MotionVAEController import MotionVAEController
 
 LOG_DIR = "mocon/motion/mvae/log"
 MODEL_DIR = "mocon/motion/mvae/model"
@@ -93,6 +93,3 @@ def main():
         mocon_task.reset()
 
     torch.save(controller.state_dict(), save_path)
-
-if __name__ == "__main__":
-    main()

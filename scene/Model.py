@@ -1,10 +1,9 @@
 import panda3d.core as p3d
-from direct.showbase.DirectObject import DirectObject
 import numpy as np
 
 from scene.Scene import Scene
 
-class Model(DirectObject):
+class Model:
     def __init__(self, scene: Scene):
         self.scene = scene
 
@@ -37,7 +36,6 @@ class Model(DirectObject):
         # joint name index
         self.name2idx = {name: i for i, name in enumerate(self.joint_names)}
 
-
     def add_color_tex(self, rgba: list, tex_name: str) -> p3d.Texture:
         # Add a single color texture
         image = p3d.PNMImage(1, 1)
@@ -48,7 +46,7 @@ class Model(DirectObject):
         return tex
     
     def load_light(self):
-        self.scene.set_background_color((0, 0, 0, 1))
+        self.scene.set_background_color((169/255, 199/255, 226/255, 1))
         self.scene.render.set_shader_auto(True)
 
         ambient_light = p3d.AmbientLight("ambient_light")

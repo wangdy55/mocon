@@ -1,20 +1,19 @@
 import panda3d.core as p3d
-from direct.showbase.DirectObject import DirectObject
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-from mocon.controller.CameraController import CameraController
-from mocon.controller.utils.Interpolator import Interpolator
-from mocon.controller.utils.Visualizer import Visualizer
+from mocon.controller.CameraCtrl import CameraCtrl
+from mocon.controller.utils.InterpolateUtil import InterpolateUtil
+from mocon.controller.utils.VisualizeUtil import VisualizeUtil
 from scene.Scene import Scene
 
 from mocon.character.Character import Character
 
-class CharacterController(DirectObject):
+class CharacterCtrl:
     def __init__(
         self,
         chara: Character,
-        camera_ctrl: CameraController,
+        camera_ctrl: CameraCtrl,
         scene: Scene
     ):
         super().__init__()
@@ -51,7 +50,7 @@ class CharacterController(DirectObject):
             node = self.scene.render.attach_new_node(f"future_node{i}")
             node.set_pos(0, 0.01, 0)
             if i == 0:
-                Visualizer.draw_arrow(node, color=arrow_color)
+                VisualizeUtil.draw_arrow(node, color=arrow_color)
             node.reparent_to(self.scene.render)
             self.future_nodes.append(node)
         self._node = self.future_nodes[0]
@@ -150,7 +149,7 @@ class CharacterController(DirectObject):
         rot_trajactory = [new_rot]
         self.future_avel = [new_avel]
         for i in range(self.future_wind):
-            new_rot, new_avel = Interpolator.simulation_rotations_update(
+            new_rot, new_avel = InterpolateUtil.simulation_rotations_update(
                 new_rot, new_avel, cur_target_rot, self.halflife, self.dt*self.sub_step
             )
             rot_trajactory.append(new_rot)
@@ -161,17 +160,17 @@ class CharacterController(DirectObject):
         pos_trajactory = [new_pos]
         self.future_vel = [new_vel]
         for i in range(self.future_wind-1):
-            new_pos, new_vel, new_acc = Interpolator.simulation_positions_update(
+            new_pos, new_vel, new_acc = InterpolateUtil.simulation_positions_update(
                 new_pos, new_vel, new_acc, cur_target_vel, self.halflife, self.dt*self.sub_step
             )
             pos_trajactory.append(new_pos)
             self.future_vel.append(new_vel.copy())
 
         # Update current rotation and position to next frame
-        self.target_rot, self.avel = Interpolator.simulation_rotations_update(
+        self.target_rot, self.avel = InterpolateUtil.simulation_rotations_update(
             init_rot, self.avel, cur_target_rot, self.halflife, self.dt
         )
-        self.target_pos, self.vel, self.acc = Interpolator.simulation_positions_update(
+        self.target_pos, self.vel, self.acc = InterpolateUtil.simulation_positions_update(
             init_pos, self.vel, self.acc, cur_target_vel, self.halflife, self.dt
         )
         rot_trajactory[0] = self.target_rot
@@ -205,7 +204,7 @@ class CharacterController(DirectObject):
         delta = p3d.LVector3(*delta)
         self.camera_ctrl.center += delta
         self.camera_ctrl.pos += delta
-        self.camera_ctrl.look()
+        self.camera_ctrl._look()
 
     def draw_future_dir(self):
         pass

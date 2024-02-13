@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-class QuatHelper:
+class QuatUtil:
     @staticmethod
     def align_quat(qt: np.ndarray, inplace: bool):
         ''' 
@@ -32,7 +32,7 @@ class QuatHelper:
         Calculate angular velocity from quaternion using finite difference
         The first dim. of rot should be time
         '''
-        rot = QuatHelper.align_quat(rot, inplace=False) # hemisphere alignment
+        rot = QuatUtil.align_quat(rot, inplace=False) # hemisphere alignment
         quat_diff = (rot[1:] - rot[:-1]) / dt # finite difference
         # Fix real part w of quat: quat's norm should be 1
         quat_diff[...,-1] = (1 - np.sum(quat_diff[...,:-1]**2, axis=-1)).clip(min = 0)**0.5
@@ -70,7 +70,7 @@ class QuatHelper:
 
         omega = np.concatenate([omega, np.zeros(omega.shape[:-1] + (1,))], axis=-1)
 
-        dq = 0.5 * dt * QuatHelper.quat_mul(omega, q)
+        dq = 0.5 * dt * QuatUtil.quat_mul(omega, q)
         res = q + dq
         res /= np.linalg.norm(res, axis=-1, keepdims=True)
         return res.reshape(initQShape)
@@ -103,7 +103,7 @@ class QuatHelper:
         q = np.ascontiguousarray(q, np.float64)
         va = R.from_quat(q).apply(vb)
         va /= np.linalg.norm(va, axis=-1, keepdims=True)
-        tmp = QuatHelper.get_quat_between(va, vb)
+        tmp = QuatUtil.get_quat_between(va, vb)
         res = (R.from_quat(tmp) * R.from_quat(q)).as_quat()
         return res / np.linalg.norm(res, axis=-1, keepdims=True)
 
@@ -130,7 +130,7 @@ class QuatHelper:
         if q.shape[-1] != 4:
             raise ValueError
 
-        return QuatHelper.flip_vecter_by_dot_prod(q, inplace)
+        return QuatUtil.flip_vecter_by_dot_prod(q, inplace)
 
     @staticmethod
     def axis_decompose(q: np.ndarray, axis: np.ndarray):
@@ -143,9 +143,9 @@ class QuatHelper:
         """
         assert axis.ndim == 1 and axis.shape[0] == 3
 
-        qa = QuatHelper.decompose_quat(q, np.asarray(axis))
+        qa = QuatUtil.decompose_quat(q, np.asarray(axis))
         qb = (R(qa, copy=False, normalize=False).inv() * R(q, copy=False, normalize=False)).as_quat()
-        qb = QuatHelper.flip_quat_by_dot_prod(qb)
+        qb = QuatUtil.flip_quat_by_dot_prod(qb)
         qa[np.abs(qa) < 1e-14] = 0
         qb[np.abs(qb) < 1e-14] = 0
         qa /= np.linalg.norm(qa, axis=-1, keepdims=True)
@@ -154,7 +154,7 @@ class QuatHelper:
 
     @staticmethod
     def y_axis_decompose(q: np.ndarray) -> tuple:
-        return QuatHelper.axis_decompose(
+        return QuatUtil.axis_decompose(
             q, np.array([0.0, 1.0, 0.0])
         )
 
@@ -169,5 +169,5 @@ class QuatHelper:
         @Returns:
             y_rad: ndarray, shape = (N, 1)
         '''
-        qy, _ = QuatHelper.y_axis_decompose(q)
+        qy, _ = QuatUtil.y_axis_decompose(q)
         return R(qy).as_rotvec()[:, 1]

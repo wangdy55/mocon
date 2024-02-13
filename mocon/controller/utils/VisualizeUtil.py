@@ -2,7 +2,7 @@ import panda3d.core as p3d
 from direct.showutil import BuildGeometry
 import numpy as np
 
-class Visualizer:
+class VisualizeUtil:
     @staticmethod
     def draw_arrow(node_path, color: list):
         node = node_path.attachNewNode("arrow")

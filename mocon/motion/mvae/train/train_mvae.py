@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import numpy as np
 import os, time, copy
 
-from mocon.motion.mvae.train_util import update_linear_schedule
+from mocon.motion.mvae.train.train_util import update_linear_schedule
 from mocon.motion.mvae.model.MotionVAE import MotionVAE, MotionMixtureVAE, MotionMixtureSpecialistVAE
 
 # dir.
@@ -19,7 +19,7 @@ MODEL_DIR = "mocon/motion/mvae/model"
 MOCAP = "walk1_subject5.npz"
 MODEL = "sp"
 BETA = 0.5
-TAIL = "exe" # supplemental info.
+TAIL = "" # supplemental info.
 
 def feed_vae(mvae, ground_truth, condition, future_weights):
     condition = condition.flatten(start_dim=1, end_dim=2)
@@ -57,7 +57,7 @@ def feed_vae(mvae, ground_truth, condition, future_weights):
 
         return (vae_output, mu, logvar), (recon_loss, kl_loss)
 
-def main():
+def train_mvae():
     args = SimpleNamespace(
         device="cuda:0" if torch.cuda.is_available() else "cpu",
         mocap_file=os.path.join(MOCAP_DIR, MOCAP),
@@ -145,7 +145,7 @@ def main():
     log_path = os.path.join(LOG_DIR, train_id)
     save_path = os.path.join(
         MODEL_DIR,
-        f"{MOCAP.split('.')[0]}_exe.pt"
+        f"{MOCAP.split('.')[0]}_{t_str}.pt"
     )
 
     if args.load_saved_model:
@@ -239,6 +239,3 @@ def main():
                     global_step += 1
 
         torch.save(mvae, save_path)
-
-if __name__ == "__main__":
-    main()

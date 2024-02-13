@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from mocon.motion.mvae.train_util import init
+from mocon.motion.motion_vae.train.train_util import init
 
 class MotionVAEController(nn.Module):
     def __init__(self, input_size, output_size):

@@ -7,8 +7,8 @@ p3d.loadPrcFile("config/scene.prc")
 class Scene(ShowBase):
     def __init__(self):
         super().__init__(fStartDirect=True)
-        self.set_frame_rate(60)
-        self.dt = 1/60
+        self.set_frame_rate(100)
+        self.dt = 1/100
 
         self.load_ground()
 

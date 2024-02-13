@@ -1,9 +1,6 @@
 from scene.Scene import Scene
 from scene.Model import Model
-from mocon.character.Character import Character
-from mocon.controller.CameraController import CameraController
-from mocon.controller.CharacterController import CharacterController
-from mocon.controller.MotionController import MotionController
+from mocon.Mocon import Mocon
 
 bvh_path = "mocon/motion/mocap/bvh/walk1_subject5.bvh"
 npz_path = "mocon/motion/mocap/npz/walk1_subject5.npz"
@@ -13,18 +10,7 @@ def main():
     scene = Scene()
     model = Model(scene)
 
-    chara = Character(model, scene, bvh_path)
-    camera_ctrl = CameraController(chara, scene)
-    chara_ctrl = CharacterController(
-        chara,
-        camera_ctrl,
-        scene
-    )
-    MotionController(
-        chara, chara_ctrl, scene,
-        npz_path,
-        mvae_path
-    )
+    Mocon(scene, model)
     
     scene.run()
 
