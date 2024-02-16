@@ -1,4 +1,3 @@
-from direct.showbase.DirectObject import DirectObject
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
@@ -16,7 +15,7 @@ class Character:
         self.scene = scene
 
         self.node = self.scene.render.attach_new_node("chara")
-        self.node.set_pos(self.scene.render, 0, 0, 0)
+        self.node.set_pos(self.scene.render, 0, 0.01, 0)
 
         # self.scene.task_mgr.add(self.update, "update_chara")
 

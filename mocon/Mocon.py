@@ -10,5 +10,5 @@ class Mocon:
 
         self.chara = Character(self.scene, self.model)
         self.camera_ctrl = CameraCtrl(self.chara)
-        self.chara_ctrl = None
+        self.chara_ctrl = CharacterCtrl(self.chara, self.camera_ctrl)
         self.motion_ctrl = None

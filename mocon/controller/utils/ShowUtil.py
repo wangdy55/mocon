@@ -36,13 +36,13 @@ class ShowUtil:
         return rope
 
     @staticmethod
-    def draw_marker(nodepath, radius, color, circle=False):
+    def draw_marker(nodepath, color, radius=0.5, circle=False):
         if circle:
             ShowUtil.draw_circle(nodepath, radius, color)
 
         from direct.showutil import BuildGeometry as BG
         node = nodepath.attach_new_node("arrow")
-        BG.addArrowGeom(node, sizeX=0.1, sizeY=0.3, color=color)
+        BG.addArrowGeom(node, sizeX=0.1, sizeY=0.2, color=color)
 
         node.set_hpr(0, 90, 180)
         node.set_pos(0, 0, 0.15)
