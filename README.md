@@ -1,3 +1,3 @@
 # MOCON
 
-Motion control module applying Motiton VAE
+Motion control module applying Motion VAE
