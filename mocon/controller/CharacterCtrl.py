@@ -199,7 +199,7 @@ class CharacterCtrl:
         future_avel[0] = self.avel.copy()
 
         # Update track rendering
-        future_rot_wxyz = future_rot[..., [3, 0, 1, 2]]
+        future_rot_wxyz = future_rot[..., [3,0,1,2]]
         for i in range(self.future_wind):
             self.future_nodes[i].set_pos(*future_pos[i])
             self.future_nodes[i].set_quat(p3d.Quat(*future_rot_wxyz[i]))
