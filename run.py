@@ -6,7 +6,10 @@ def main():
     scene = Scene()
     model = Model(scene)
 
-    Mocon(scene, model, False)
+    Mocon(
+        scene, model,
+        use_mvae=True
+    )
     
     scene.run()
 

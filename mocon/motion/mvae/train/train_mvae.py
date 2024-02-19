@@ -16,7 +16,7 @@ LOG_DIR = "mocon/motion/mvae/log"
 MODEL_DIR = "mocon/motion/mvae/model"
 
 # spec.
-MOCAP = "walk1_subject5.npz"
+MOCAP = "run2_subject1.npz"
 MODEL = "sp"
 BETA = 0.5
 TAIL = "" # supplemental info.

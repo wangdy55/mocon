@@ -28,7 +28,7 @@ class CharacterCtrl:
         self.user_input = p3d.LVector3(0, 0, 0) # user input in camera forward direction
 
         # props of future track
-        self.future_wind = 6
+        self.future_wind = 3
         self.sub_step = 20
         self.future_nodes = []
         self.future_pos = []

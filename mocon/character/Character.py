@@ -1,8 +1,7 @@
 import numpy as np
-from scipy.spatial.transform import Rotation as R
 
 from scene.Scene import Scene
-from mocon.motion.BVHMotion import BVHMotion
+from mocon.motion.mocap.BVHMotion import BVHMotion
 
 class Character:
     def __init__(
@@ -20,10 +19,10 @@ class Character:
         if use_mvae:
             # Load BVH file and init mvae pose
             self.frame = 300
-            self.bvh_file = "mocon/motion/mocap/bvh/walk1_subject5.bvh"
+            self.bvh_file = "mocon/motion/mocap/bvh/run2_subject1.bvh"
             self._load_bvh(self.bvh_file, self.frame)
-            self.npz_file = "mocon/motion/mocap/npz/walk1_subject5.npz"
-            self.mvae_path = "mocon/motion/mvae/model/walk1_subject5_240129_190220.pt"
+            self.npz_file = "mocon/motion/mocap/npz/run2_subject1.npz"
+            self.mvae_path = "mocon/motion/mvae/model/run2_subject1_240219_195630.pt"
             
         else:
             pass
