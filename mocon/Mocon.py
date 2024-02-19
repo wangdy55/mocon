@@ -1,6 +1,7 @@
 from mocon.character.Character import Character
 from mocon.controller.CameraCtrl import CameraCtrl
 from mocon.controller.CharacterCtrl import CharacterCtrl
+from mocon.motion.MotionCtrl import MotionCtrl
 from mocon.motion.MvaeMotionCtrl import MvaeMotionCtrl
 
 class Mocon:
@@ -13,6 +14,6 @@ class Mocon:
 
         if not use_mvae:
             self.chara_ctrl = CharacterCtrl(self.chara, self.camera_ctrl)
-            self.motion_ctrl = None
+            self.motion_ctrl = MotionCtrl(self.chara, self.chara_ctrl)
         else:
             self.motion_ctrl = MvaeMotionCtrl(self.chara)

@@ -48,12 +48,14 @@ class SpringUtil:
     @staticmethod
     def decay_spring_implicit_damping_rot(rot, avel, halflife, dt):
         d = SpringUtil.halflife2dampling(halflife) / 2
-        j0 = from_euler(rot).as_rotvec()
+        # j0 = from_euler(rot).as_rotvec()
+        j0 = rot
         j1 = avel + d * j0
         eydt = math.exp(-d * dt)
         a1 = eydt * (j0 + j1*dt)
        
-        rot_res = R.from_rotvec(a1).as_euler('XYZ', degrees=True)
+        # rot_res = R.from_rotvec(a1).as_euler('XYZ', degrees=True)
+        rot_res = a1
         avel_res = eydt * (avel - j1 * dt * d)
         return rot_res, avel_res
     

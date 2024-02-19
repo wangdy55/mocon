@@ -3,8 +3,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 from mocon.controller.CameraCtrl import CameraCtrl
-from mocon.controller.utils.SpringUtil import SpringUtil
-from mocon.controller.utils.ShowUtil import ShowUtil
+from mocon.utils.SpringUtil import SpringUtil
+from mocon.utils.ShowUtil import ShowUtil
 
 from mocon.character.Character import Character
 
@@ -28,7 +28,7 @@ class CharacterCtrl:
         self.user_input = p3d.LVector3(0, 0, 0) # user input in camera forward direction
 
         # props of future track
-        self.future_wind = 3
+        self.future_wind = 6
         self.sub_step = 20
         self.future_nodes = []
         self.future_pos = []
@@ -213,6 +213,6 @@ class CharacterCtrl:
 
         return task.cont
     
-    def get_next_state(self):
-        return self.next_rot, self.avel, self.next_pos, self.vel
+    def get_desired_state(self):
+        return self.future_pos, self.future_rot, self.future_vel, self.future_avel
     

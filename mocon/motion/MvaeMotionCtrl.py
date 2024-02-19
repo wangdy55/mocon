@@ -3,8 +3,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 from mocon.character.Character import Character
-from mocon.controller.CharacterCtrl import CharacterCtrl
-from mocon.motion.utils.QuatUtil import QuatUtil
+from mocon.utils.QuatUtil import QuatUtil
 
 class MvaeMotionCtrl:
     def __init__(

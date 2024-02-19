@@ -3,7 +3,7 @@ import copy
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-from mocon.motion.utils.QuatUtil import QuatUtil
+from mocon.utils.QuatUtil import QuatUtil
 
 """
 N = numFrames
@@ -29,14 +29,18 @@ class BVHMotion():
         self.joint_quat = None  # shape = (N, M, 4), R.quat
 
         if self.bvh_path is not None:
-            self.load_bvh()
+            self._load_bvh()
         pass
 
     @property
     def num_joints(self):
         return len(self.joint_names)
+    
+    @property
+    def motion_length(self):
+        return self.num_frames
 
-    def load_static_data(self) -> tuple:
+    def _load_static_data(self) -> tuple:
         with open(self.bvh_path, "r") as f:
             joint_names = []
             parent_idx = []
@@ -90,7 +94,7 @@ class BVHMotion():
         offsets = np.concatenate(offsets, axis=0)
         return joint_names, parent_idx, channels, offsets, dt
 
-    def load_motion_data(self, start_frame=0) -> np.ndarray:
+    def _load_motion_data(self, start_frame=0) -> np.ndarray:
         """
         @Parameters:
             start_frame: int, which frame to start from
@@ -113,9 +117,9 @@ class BVHMotion():
         self.start_frame = start_frame
         return motion_data[start_frame:]
 
-    def load_bvh(self):
-        self.joint_names, self.parent_idx, self.channels, self.offsets, self.dt = self.load_static_data()
-        motion_data = self.load_motion_data()
+    def _load_bvh(self):
+        self.joint_names, self.parent_idx, self.channels, self.offsets, self.dt = self._load_static_data()
+        motion_data = self._load_motion_data()
 
         self.num_frames = motion_data.shape[0]
         self.frame_size = motion_data.shape[1]
@@ -176,7 +180,7 @@ class BVHMotion():
 
         return joint_trans, joint_orien
    
-    def adjust_joint_names(self, targetJointNames):
+    def _adjust_joint_names(self, targetJointNames):
         """
         Adjust joint seq. to target joint names
         """
@@ -192,7 +196,7 @@ class BVHMotion():
     def raw_copy(self):
         return copy.deepcopy(self)
     
-    def sub_seq(self, start, end):
+    def _sub_seq(self, start, end):
         """
         Get a sub sequence info. of joint position and rotation
 
@@ -207,7 +211,7 @@ class BVHMotion():
         res.joint_quat = res.joint_quat[start:end,:,:]
         return res
     
-    def append(self, other):
+    def _append(self, other):
         """
         Append a motion to the end
         """
@@ -222,6 +226,32 @@ class BVHMotion():
             axis=0
         )
     
+    def retarget_root(self, frame_idx, target_trans_xz, target_orien_xz):
+        res = self.raw_copy()
+        
+        offset = target_trans_xz - res.joint_pos[frame_idx, 0, [0,2]]
+        res.joint_pos[:, 0, [0,2]] += offset
+        
+        # \theta between target_orien_xz and z-axis -> y-axis angle \rho
+        sin_theta = np.cross(target_orien_xz, [0, 1]) / np.linalg.norm(target_orien_xz)
+        theta = np.arcsin(sin_theta) # rad
+        theta = theta if theta > 0 else 2 * np.pi - theta
+        rho = R.from_euler('Y', theta)
+        # Decompose quat to y comp.
+        q_y, _ = QuatUtil.y_axis_decompose(res.joint_quat[frame_idx, 0, :])
+        r_y = R(q_y)
+
+        # root.Ry => its y-axis component
+        r = R.from_quat(res.joint_quat[:, 0, :])
+        res.joint_quat[:, 0, :] = (rho * r_y.inv() * r).as_quat()
+
+        # root_pos = \rho.apply(root_pos)
+        v_xz =  res.joint_pos[:, 0, :] - res.joint_pos[frame_idx, 0, :]
+        v_xz = (rho * r_y.inv()).apply(v_xz)
+        res.joint_pos[:, 0, :] = res.joint_pos[frame_idx, 0, :] + v_xz
+
+        return res
+
     # for MotionVAE motion format
     def get_local_joint_info(self) -> tuple:
         """

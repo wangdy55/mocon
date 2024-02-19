@@ -6,7 +6,7 @@ def main():
     scene = Scene()
     model = Model(scene)
 
-    Mocon(scene, model, True)
+    Mocon(scene, model, False)
     
     scene.run()
 

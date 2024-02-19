@@ -3,7 +3,6 @@ from scipy.spatial.transform import Rotation as R
 
 from scene.Scene import Scene
 from mocon.motion.BVHMotion import BVHMotion
-from mocon.motion.utils.QuatUtil import QuatUtil
 
 class Character:
     def __init__(
