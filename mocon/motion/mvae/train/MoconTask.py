@@ -35,7 +35,7 @@ class MoconTask:
             high=self.mvae_motion.shape[0],
             size=(self.num_parallel,)
         ).long().to(self.device)
-        self.root_facing = torch.zeros(
+        self.root_facing = torch.zeros( # [0, 2*pi)
             (self.num_parallel, 1,)
         ).to(self.device)
         self.root_xz = torch.zeros(
@@ -124,9 +124,13 @@ class MoconTask:
 
     def get_target_delta_and_angle(self):
         target_delta = self.target - self.root_xz
-        target_angle = self.root_facing + torch.atan2(
+        # target_angle = self.root_facing + torch.atan2(
+        #     target_delta[:, 1], target_delta[:, 0]
+        # ).unsqueeze(dim=1)
+        target_angle = torch.atan2(
             target_delta[:, 1], target_delta[:, 0]
         ).unsqueeze(dim=1)
+
         return target_delta, target_angle
 
     def reset_target(self):
