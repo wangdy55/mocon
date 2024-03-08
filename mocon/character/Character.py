@@ -3,12 +3,15 @@ import numpy as np
 from scene.Scene import Scene
 from mocon.motion.mocap.BVHMotion import BVHMotion
 
+bvh_filename = "walk1_subject5"
+mvae_filename = "walk1_subject5_240129_190220"
+
 class Character:
     def __init__(
         self,
         scene: Scene,
         model,
-        use_mvae=True
+        random
     ):
         self.model = model
         self.scene = scene
@@ -16,17 +19,12 @@ class Character:
         self.node = self.scene.render.attach_new_node("chara")
         self.node.set_pos(self.scene.render, 0, 0.01, 0)
 
-        if use_mvae:
-            # Load BVH file and init mvae pose
-            self.frame = 300
-            self.bvh_file = "mocon/motion/mocap/bvh/run2_subject1.bvh"
-            self._load_bvh(self.bvh_file, self.frame)
-            self.npz_file = "mocon/motion/mocap/npz/run2_subject1.npz"
-            self.mvae_path = "mocon/motion/mvae/model/run2_subject1_240219_195630.pt"
-            
-        else:
-            pass
-            # use state machine to control character motion
+        # Load BVH file and init mvae pose
+        self.frame = 300
+        self.bvh_file = f"mocon/motion/mocap/bvh/{bvh_filename}.bvh"
+        self._load_bvh(self.bvh_file, self.frame)
+        self.npz_file = f"mocon/motion/mocap/npz/{bvh_filename}.npz"
+        self.mvae_path = f"mocon/motion/mvae/model/{mvae_filename}.pt"
 
         # self.root_pos = self.node.get_pos()
         self.scene.task_mgr.add(self.update, "update_chara")

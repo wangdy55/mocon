@@ -134,7 +134,7 @@ class CameraCtrl(DirectObject):
         x = _y_up.cross(z)
         x.normalize()
         y = z.cross(x)
-        y.normalize()
+        y.normalize() 
 
         z1 = _y_up * z.dot(_y_up) # vertical comp. of z
         z2 = z - z1 # horizontal comp. of z

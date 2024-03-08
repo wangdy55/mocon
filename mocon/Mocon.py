@@ -9,24 +9,16 @@ class Mocon:
     def __init__(
             self,
             scene, model,
-            use_mvae,
-            play_mod=False
+            random
         ):
         self.scene = scene
         self.model = model
 
-        self.chara = Character(self.scene, self.model, use_mvae)
+        self.chara = Character(self.scene, self.model, random)
         self.camera_ctrl = CameraCtrl(self.chara)
 
-        if play_mod:
-            self.bvh_player = BVHPlayer(
-                self.chara,
-                bvh_file="mocon/motion/mocap/bvh/run2_subject1.bvh",
-                npz_file="mocon/motion/mocap/npz/run2_subject1.npz"
-            )
+        if random:
+            self.motion_ctrl = MotionCtrl(self.chara)
         else:
-            if use_mvae:
-                self.motion_ctrl = MotionCtrl(self.chara)
-            else:
-                self.chara_ctrl = CharacterCtrl(self.chara, self.camera_ctrl)
-                self.motion_ctrl = SimpleMotionCtrl(self.chara, self.chara_ctrl)
+            self.chara_ctrl = CharacterCtrl(self.chara, self.camera_ctrl)
+            self.motion_ctrl = SimpleMotionCtrl(self.chara, self.chara_ctrl)
