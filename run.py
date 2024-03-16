@@ -8,7 +8,7 @@ def main():
 
     Mocon(
         scene, model,
-        random=False
+        random=True
     )
     
     scene.run()
