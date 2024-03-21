@@ -42,7 +42,7 @@ class CharacterCtrl:
         self.dv = p3d.LVector3(0, 0, 0)
         self.dr = p3d.LVector3(0, 0, 0)
         self.halflife = 0.27
-        self.move_speed = p3d.LVector3(1.75, 1.75, 1.75)
+        self.move_speed = p3d.LVector3(1.0, 1.0, 1.0)
 
         self._set_key_map()
         # self._init_key_input()
@@ -104,9 +104,9 @@ class CharacterCtrl:
         fwd_speed, side_speed, back_speed = self.move_speed
         # camera rotation around y-axis
         angle = np.arctan2(cam_fwd[0], cam_fwd[2])
-        y_rotvec = R.from_rotvec(angle * np.array([0, 1, 0]))
+        y_rot = R.from_rotvec(angle * np.array([0, 1, 0]))
         # coordinate transformation from camera to global
-        global_input = y_rotvec.apply(user_input)
+        global_input = y_rot.apply(user_input)
 
         # [coordinate transformation] from global to chara's local
         local_target_direct = R.from_quat(chara_rot).apply(global_input, inverse=True)

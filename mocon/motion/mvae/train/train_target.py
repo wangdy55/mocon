@@ -20,15 +20,13 @@ def get_2d_rotmat(yaw) -> torch.Tensor:
     rotmat = torch.stack((col1, col2), dim=-1)
     return rotmat
 
-def feed_con_mvae(con_mvae, con_signal, condition, root_info):
-    next_frame = con_mvae(con_signal, condition)
-
-
-    direct_loss = (
-        target_info[:, 2].cos() - root_info[:, 2].cos() +
-        target_info[:, 2].sin() - root_info[:, 2].sin()
-    ).pow(2).mean()
-    # return next_frame, con_loss
+# def feed_con_mvae(con_mvae, con_signal, condition, root_info):
+#     next_frame = con_mvae(con_signal, condition)
+#     direct_loss = (
+#         target_info[:, 2].cos() - root_info[:, 2].cos() +
+#         target_info[:, 2].sin() - root_info[:, 2].sin()
+#     ).pow(2).mean()
+#     # return next_frame, con_loss
 
 def train_target():
     args = SimpleNamespace(

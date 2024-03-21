@@ -1,3 +1,4 @@
+import numpy as np
 from scipy.spatial.transform import Rotation as R
 import math
 
@@ -30,6 +31,7 @@ class SpringUtil:
         avel = eydt * (avel - j1 * dt * d)
         return rot, avel
 
+    @staticmethod
     def update_spring_pos(pos, vel, acc, target_vel, halflife, dt):
         d = SpringUtil.halflife2dampling(halflife) / 2
         j0 = vel - target_vel
@@ -45,6 +47,35 @@ class SpringUtil:
         acc = eydt * (acc - j1*d*dt)
         return pos, vel, acc
     
+    @staticmethod
+    def batch_spring_avel(rot, target_rot, avel, halflife, dt) -> np.ndarray:
+        d = SpringUtil.halflife2dampling(halflife) / 2
+        j0 = R.from_quat(rot) * R.from_quat(target_rot).inv()
+        j0 = j0.as_rotvec()
+        j1 = avel + d * j0
+        eydt = math.exp(-d * dt)
+        # tmp1 = eydt * (j0 + j1 * dt)
+
+        # rot = R.from_rotvec(tmp1) * R.from_quat(target_rot)
+        # rot = rot.as_quat()
+        avel = eydt * (avel - j1 * dt * d)
+        return avel
+
+    @staticmethod
+    def batch_spring_vel(vel, target_vel, acc, halflife, dt) -> np.ndarray:
+        d = SpringUtil.halflife2dampling(halflife) / 2
+        j0 = vel - target_vel
+        j1 = acc + d * j0
+        eydt = math.exp(-d * dt)
+        # pos_prev = pos
+        tmp1 = j0 + j1 * dt
+        # tmp2 = j1 / (d * d)
+
+        # pos = eydt * ( -tmp2 - tmp1/d ) + tmp2 + j0/d + target_vel*dt + pos_prev
+        vel = eydt*tmp1 + target_vel
+        # acc = eydt * (acc - j1*d*dt)
+        return vel
+
     @staticmethod
     def decay_spring_implicit_damping_rot(rot, avel, halflife, dt):
         d = SpringUtil.halflife2dampling(halflife) / 2
