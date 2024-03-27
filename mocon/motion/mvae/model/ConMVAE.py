@@ -25,7 +25,9 @@ class ConMVAE(nn.Module):
         return z
     
     def decode(self, z, c):
-        return self.mvae.sample(z, c, deterministic=True)
+        c = self.mvae.normalize(c)
+        output = self.mvae.sample(z, c, deterministic=True)
+        return self.mvae.denormalize(output)
 
     def forward(self, u, c):
         z = self.act(u, c)

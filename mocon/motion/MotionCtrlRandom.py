@@ -3,17 +3,14 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 from mocon.character.Character import Character
-from mocon.controller.CharacterCtrl import CharacterCtrl
 from mocon.utils.QuatUtil import QuatUtil
 
-class MotionCtrl:
+class MotionCtrlRandom:
     def __init__(
         self,
         chara: Character,
-        chara_ctrl: CharacterCtrl
     ):
         self.chara = chara
-        self.chara_ctrl = chara_ctrl
         self.scene = self.chara.scene
         self.frame_idx = self.chara.frame
         # Initialize motion
@@ -22,14 +19,18 @@ class MotionCtrl:
         mvae_motion = mvae_mocap["mvae_motion"]
         self.motion = mvae_motion[self.frame_idx]
         
-        self.load_model(self.chara.con_mvae_path)
+        self.load_mvae(self.chara.mvae_path)
+        self.z = torch.normal(
+            mean=0, std=1,
+            size=(1, self.mvae.latent_size)
+        ).to("cuda:0")
 
         self.scene.task_mgr.add(self.update, "update_motion_controller")
 
     @torch.no_grad()
-    def load_model(self, model_path: str):
-        self.con_mvae = torch.load(model_path)
-        self.con_mvae.eval()
+    def load_mvae(self, mvae_path: str):
+        self.mvae = torch.load(mvae_path)
+        self.mvae.eval()
 
     def _sync_chara(self):
         vx, vz, wy = self.motion[:3]
@@ -96,28 +97,24 @@ class MotionCtrl:
 
     @torch.no_grad()
     def _update_motion(self):
-        # Resolute user's control signal
-        _, future_quat, future_vel, future_avel = self.chara_ctrl.get_desired_state()
-        cur_quat = future_quat[0]
-        cur_vel = future_vel[0]
-        cur_avel = future_avel[0]
+        # Call MVAE to predict motion
+        base_z = torch.normal(
+            mean=0, std=1,
+            size=(1, self.mvae.latent_size)
+        ).to("cuda:0")
 
-        cur_rot = R.from_quat(cur_quat)
-        cur_vel_xz = cur_rot.apply(cur_vel)[:2].reshape(-1, 2)
-        cur_avel_y = np.array(cur_avel[1]).reshape(-1, 1)
-        con_signal = np.concatenate(
-            (cur_vel_xz, cur_avel_y), axis=-1
-        )
-
-        # Call ConMVAE to predict motion
-        u = torch.from_numpy(con_signal).float().to("cuda:0")
+        self.z = (base_z + self.z) / 2
         c = torch.from_numpy(
             self.motion
         ).float().reshape(1, -1).to("cuda:0")
-        output = self.con_mvae(u, c)
-        output = output.cpu()
-        output = output.detach().numpy()
 
+        c = self.mvae.normalize(c)
+        output = self.mvae.sample(
+            self.z, c, deterministic=True
+        )
+        output = self.mvae.denormalize(output).cpu()
+
+        output = output.detach().numpy()
         self.motion = output.squeeze()
 
     def _sync_controller(self):

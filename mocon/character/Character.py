@@ -5,13 +5,13 @@ from mocon.motion.mocap.BVHMotion import BVHMotion
 
 bvh_filename = "walk1_subject5"
 mvae_filename = "walk1_subject5_240129_190220"
+con_mvae_filename = "con_walk_240326_233358"
 
 class Character:
     def __init__(
         self,
         scene: Scene,
-        model,
-        random
+        model
     ):
         self.model = model
         self.scene = scene
@@ -25,6 +25,7 @@ class Character:
         self._load_bvh(self.bvh_file, self.frame)
         self.npz_file = f"mocon/motion/mocap/npz/{bvh_filename}.npz"
         self.mvae_path = f"mocon/motion/mvae/model/{mvae_filename}.pt"
+        self.con_mvae_path = f"mocon/motion/mvae/model/{con_mvae_filename}.pt"
 
         # self.root_pos = self.node.get_pos()
         self.scene.task_mgr.add(self.update, "update_chara")
