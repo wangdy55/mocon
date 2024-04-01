@@ -8,7 +8,7 @@ def main():
 
     Mocon(
         scene, model,
-        mode="ctrl"
+        mode="control"
     )
     
     scene.run()

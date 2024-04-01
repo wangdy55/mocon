@@ -5,7 +5,7 @@ from scipy.spatial.transform import Rotation as R
 from mocon.character.Character import Character
 from mocon.utils.QuatUtil import QuatUtil
 
-class MotionCtrlRandom:
+class MotionGen:
     def __init__(
         self,
         chara: Character,

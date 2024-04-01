@@ -7,7 +7,7 @@ from mocon.utils.MocapUtil import MocapUtil
 from mocon.utils.QuatUtil import QuatUtil
 from mocon.utils.SpringUtil import SpringUtil
 
-class SimpleMotionCtrl:
+class MotionCore:
     def __init__(self, chara: Character, chara_ctrl):
         self.chara = chara
         self.scene = self.chara.scene

@@ -4,6 +4,7 @@ from scipy.spatial.transform import Rotation as R
 
 from mocon.character.Character import Character
 from mocon.controller.CharacterCtrl import CharacterCtrl
+from mocon.motion.MotionCore import MotionCore
 from mocon.utils.QuatUtil import QuatUtil
 
 class MotionCtrl:
@@ -25,6 +26,7 @@ class MotionCtrl:
         self.load_model(self.chara.con_mvae_path)
 
         self.scene.task_mgr.add(self.update, "update_motion_controller")
+        # self.core = MotionCore(self.chara, self.chara_ctrl)
 
     @torch.no_grad()
     def load_model(self, model_path: str):
