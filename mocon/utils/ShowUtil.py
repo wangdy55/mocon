@@ -42,7 +42,7 @@ class ShowUtil:
 
         from direct.showutil import BuildGeometry as BG
         node = nodepath.attach_new_node("arrow")
-        BG.addArrowGeom(node, sizeX=0.1, sizeY=0.2, color=color)
+        BG.addArrowGeom(node, sizeX=0.075, sizeY=0.15, color=color)
 
         node.set_hpr(0, 90, 180)
         node.set_pos(0, 0, 0.15)

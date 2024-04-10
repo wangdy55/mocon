@@ -42,13 +42,13 @@ class CharacterCtrl:
         self.dv = p3d.LVector3(0, 0, 0)
         self.dr = p3d.LVector3(0, 0, 0)
         self.halflife = 0.27
-        self.move_speed = p3d.LVector3(1.0, 1.0, 1.0)
+        self.move_speed = p3d.LVector3(1.5, 1.5, 1.5)
 
         self._set_key_map()
         # self._init_key_input()
 
         self.node = self.chara.node
-        arrow_color = [0, 1, 0, 1]
+        arrow_color = [1, 140/255, 0, 1]
         ShowUtil.draw_marker(self.node, color=arrow_color)
         self.future_nodes.append(self.node)
         for i in range(1, self.future_wind):
